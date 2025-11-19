@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono-Echo: La Paradoja</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0d0d1e; /* Fondo oscuro casi negro */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0ff;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 2px solid #5d5d8e;
+            box-shadow: 0 0 20px rgba(93, 93, 142, 0.7);
+        }
+
+        #game-info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(224, 224, 255, 0.6);
+            z-index: 10;
+            text-align: center;
+        }
+
+        #game-over-screen {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #e0e0ff;
+            font-size: 36px;
+            text-align: center;
+            display: none; /* Oculto por defecto */
+            z-index: 20;
+        }
+
+        #game-over-screen button {
+            background-color: #4a4aa8;
+            color: #e0e0ff;
+            border: 2px solid #8e8ebf;
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 30px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 0 10px rgba(74, 74, 168, 0.7);
+        }
+
+        #game-over-screen button:hover {
+            background-color: #5d5dbe;
+            transform: scale(1.05);
+        }
+        #game-over-screen button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-info">
+        Ronda: <span id="round-display">1</span> | Puntuación: <span id="score-display">0</span>
+        <br>Tiempo restante: <span id="timer-display">15.0</span>s
+    </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="game-over-screen">
+        <h1>¡FIN DEL JUEGO!</h1>
+        <p>Alcanzaste la Ronda: <span id="final-round"></span></p>
+        <p>Puntuación Final: <span id="final-score"></span></p>
+        <button id="restart-button">JUGAR DE NUEVO</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const roundDisplay = document.getElementById('round-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalRoundDisplay = document.getElementById('final-round');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+
+        const PLAYER_SIZE = 20;
+        const PLAYER_SPEED = 3;
+        const BULLET_SIZE = 5;
+        const BULLET_SPEED = 7;
+        const ENEMY_SIZE = 25;
+        const ENEMY_SPEED = 1.5;
+        const ROUND_TIME = 15; // Segundos
+
+        let player;
+        let bullets = [];
+        let enemies = [];
+        let particles = []; // Para explosiones
+        let mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
+        let keys = {};
+
+        let currentRound = 1;
+        let score = 0;
+        let gameOver = false;
+        let gameTimer = ROUND_TIME;
+        let lastTime = 0;
+
+        // Historial del jugador para los ecos
+        let playerHistory = []; // { x, y, angle, shooting: boolean } por cada frame
+        let echoBulletsHistory = []; // { x, y, angle } de las balas disparadas por el jugador
+
+        // Ecos (jugadores pasados)
+        let echoes = [];
+        let echoBullets = [];
+
+        class Entity {
+            constructor(x, y, size, color) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.angle = 0; // Para la orientación
+                this.dx = 0;
+                this.dy = 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+
+            update(deltaTime) {
+                this.x += this.dx * deltaTime;
+                this.y += this.dy * deltaTime;
+
+                // Mantener dentro de los límites del canvas
+                if (this.x - this.size / 2 < 0) this.x = this.size / 2;
+                if (this.x + this.size / 2 > canvas.width) this.x = canvas.width - this.size / 2;
+                if (this.y - this.size / 2 < 0) this.y = this.size / 2;
+                if (this.y + this.size / 2 > canvas.height) this.y = canvas.height - this.size / 2;
+            }
+        }
+
+        class Player extends Entity {
+            constructor(x, y) {
+                super(x, y, PLAYER_SIZE, '#00FFFF'); // Cian brillante
+                this.shooting = false;
+                this.shootCooldown = 0.2; // Segundos
+                this.currentCooldown = 0;
+                this.alive = true;
+            }
+
+            update(deltaTime) {
+                if (!this.alive) return;
+
+                this.dx = 0;
+                this.dy = 0;
+
+                if (keys['w'] || keys['W']) this.dy = -PLAYER_SPEED;
+                if (keys['s'] || keys['S']) this.dy = PLAYER_SPEED;
+                if (keys['a'] || keys['A']) this.dx = -PLAYER_SPEED;
+                if (keys['d'] || keys['D']) this.dx = PLAYER_SPEED;
+
+                // Normalizar velocidad diagonal
+                if (this.dx !== 0 && this.dy !== 0) {
+                    const factor = Math.sqrt(0.5);
+                    this.dx *= factor;
+                    this.dy *= factor;
+                }
+
+                super.update(deltaTime);
+
+                // Apuntar al mouse
+                this.angle = Math.atan2(mousePos.y - this.y, mousePos.x - this.x);
+
+                // Disparar
+                if (this.shooting && this.currentCooldown <= 0) {
+                    const bulletX = this.x + Math.cos(this.angle) * PLAYER_SIZE / 2;
+                    const bulletY = this.y + Math.sin(this.angle) * PLAYER_SIZE / 2;
+                    bullets.push(new Bullet(bulletX, bulletY, this.angle, 'player'));
+                    this.currentCooldown = this.shootCooldown;
+                } else {
+                    this.currentCooldown -= deltaTime;
+                }
+
+                // Guardar historial
+                playerHistory.push({
+                    x: this.x,
+                    y: this.y,
+                    angle: this.angle,
+                    shooting: this.shooting && this.currentCooldown <= this.shootCooldown - deltaTime // Solo si realmente disparó
+                });
+            }
+        }
+
+        class EchoPlayer extends Entity {
+            constructor(history, roundColor) {
+                const firstFrame = history[0];
+                super(firstFrame.x, firstFrame.y, PLAYER_SIZE, roundColor);
+                this.history = history;
+                this.currentFrame = 0;
+                this.alive = true; // Ecos son 'vivos' hasta que se golpean
+            }
+
+            update() {
+                if (!this.alive || this.currentFrame >= this.history.length) {
+                    // Mantener el eco en la última posición si ha terminado su historial o ha sido destruido
+                    if (this.history.length > 0 && this.currentFrame >= this.history.length) {
+                        const lastFrame = this.history[this.history.length - 1];
+                        this.x = lastFrame.x;
+                        this.y = lastFrame.y;
+                        this.angle = lastFrame.angle;
+                    }
+                    return;
+                }
+
+                const frame = this.history[this.currentFrame];
+                this.x = frame.x;
+                this.y = frame.y;
+                this.angle = frame.angle;
+
+                if (frame.shooting) {
+                     const bulletX = this.x + Math.cos(this.angle) * PLAYER_SIZE / 2;
+                     const bulletY = this.y + Math.sin(this.angle) * PLAYER_SIZE / 2;
+                     echoBullets.push(new Bullet(bulletX, bulletY, this.angle, 'echo', this.color));
+                }
+                this.currentFrame++;
+            }
+        }
+
+        class Bullet extends Entity {
+            constructor(x, y, angle, shooterType, color = '#FF00FF') { // Magenta por defecto para balas de jugador/eco
+                super(x, y, BULLET_SIZE, color);
+                this.dx = Math.cos(angle) * BULLET_SPEED;
+                this.dy = Math.sin(angle) * BULLET_SPEED;
+                this.shooterType = shooterType; // 'player', 'enemy', 'echo'
+                this.lifetime = 2; // Segundos
+            }
+
+            update(deltaTime) {
+                super.update(deltaTime);
+                this.lifetime -= deltaTime;
+            }
+
+            isOffscreen() {
+                return this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height || this.lifetime <= 0;
+            }
+        }
+
+        class Enemy extends Entity {
+            constructor(x, y) {
+                super(x, y, ENEMY_SIZE, '#FF4500'); // Naranja rojizo
+                this.target = null; // El jugador o un eco
+                this.shootCooldown = 1; // Segundos
+                this.currentCooldown = Math.random() * this.shootCooldown; // Disparo inicial aleatorio
+                this.alive = true;
+                this.moveDirection = Math.random() * Math.PI * 2; // Dirección de movimiento aleatoria
+                this.changeDirectionTime = 0;
+            }
+
+            update(deltaTime) {
+                if (!this.alive) return;
+
+                // Moverse aleatoriamente con cambios de dirección
+                this.changeDirectionTime -= deltaTime;
+                if (this.changeDirectionTime <= 0) {
+                    this.moveDirection = Math.random() * Math.PI * 2;
+                    this.changeDirectionTime = Math.random() * 2 + 1; // Cambia de dirección cada 1-3 segundos
+                }
+                this.dx = Math.cos(this.moveDirection) * ENEMY_SPEED;
+                this.dy = Math.sin(this.moveDirection) * ENEMY_SPEED;
+                super.update(deltaTime);
+
+                // Apuntar al jugador o a un eco cercano
+                let closestTarget = player;
+                let minDist = Infinity;
+
+                if (player.alive) {
+                    const dist = Math.hypot(player.x - this.x, player.y - this.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestTarget = player;
+                    }
+                }
+
+                echoes.forEach(echo => {
+                    if (echo.alive) {
+                        const dist = Math.hypot(echo.x - this.x, echo.y - this.y);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestTarget = echo;
+                        }
+                    }
+                });
+
+                if (closestTarget && closestTarget.alive) {
+                    this.angle = Math.atan2(closestTarget.y - this.y, closestTarget.x - this.x);
+                    // Disparar
+                    this.currentCooldown -= deltaTime;
+                    if (this.currentCooldown <= 0) {
+                        const bulletX = this.x + Math.cos(this.angle) * ENEMY_SIZE / 2;
+                        const bulletY = this.y + Math.sin(this.angle) * ENEMY_SIZE / 2;
+                        bullets.push(new Bullet(bulletX, bulletY, this.angle, 'enemy', '#FFFF00')); // Amarillo para balas enemigas
+                        this.currentCooldown = this.shootCooldown;
+                    }
+                } else {
+                    // Si no hay objetivos vivos, simplemente mira en una dirección fija o sigue moviéndose
+                    this.angle = this.moveDirection;
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.size = Math.random() * 3 + 1;
+                this.dx = (Math.random() - 0.5) * 4;
+                this.dy = (Math.random() - 0.5) * 4;
+                this.lifetime = Math.random() * 0.8 + 0.3; // Segundos
+                this.opacity = 1;
+            }
+
+            update(deltaTime) {
+                this.x += this.dx * deltaTime;
+                this.y += this.dy * deltaTime;
+                this.lifetime -= deltaTime;
+                this.opacity = this.lifetime / (Math.random() * 0.8 + 0.3); // Fade out
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 5;
+                ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function initGame() {
+            player = new Player(canvas.width / 2, canvas.height / 2);
+            bullets = [];
+            enemies = [];
+            particles = [];
+            echoes = [];
+            echoBullets = [];
+
+            // Añadir ecos de rondas anteriores
+            for (let i = 0; i < playerHistoryPerRound.length; i++) {
+                // Generar un color único para cada eco (y sus balas)
+                const echoColor = `hsl(${i * 60 + 180}, 100%, 60%)`; // Colores distintivos (azul, verde, amarillo...)
+                echoes.push(new EchoPlayer(playerHistoryPerRound[i], echoColor));
+            }
+
+
+            // Añadir enemigos para la ronda actual
+            const numEnemies = currentRound + 2; // Más enemigos cada ronda
+            for (let i = 0; i < numEnemies; i++) {
+                let enemyX, enemyY;
+                let validPosition = false;
+                while (!validPosition) {
+                    enemyX = Math.random() * (canvas.width - ENEMY_SIZE) + ENEMY_SIZE / 2;
+                    enemyY = Math.random() * (canvas.height - ENEMY_SIZE) + ENEMY_SIZE / 2;
+                    // Asegurarse de que el enemigo no spawnee demasiado cerca del jugador
+                    if (Math.hypot(enemyX - player.x, enemyY - player.y) > 150) {
+                        validPosition = true;
+                    }
+                }
+                enemies.push(new Enemy(enemyX, enemyY));
+            }
+
+            gameOver = false;
+            gameTimer = ROUND_TIME;
+            playerHistory = []; // Resetear historial para la nueva ronda
+            echoBulletsHistory = [];
+
+            roundDisplay.textContent = currentRound;
+            scoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'none';
+        }
+
+        // Historiales de jugador por cada ronda completada
+        let playerHistoryPerRound = []; // Array de arrays, cada uno es el playerHistory de una ronda
+
+        function nextRound() {
+            // Guardar el historial del jugador de esta ronda
+            playerHistoryPerRound.push([...playerHistory]);
+            currentRound++;
+            initGame();
+        }
+
+        function resetGame() {
+            currentRound = 1;
+            score = 0;
+            playerHistoryPerRound = [];
+            initGame();
+        }
+
+        function gameLoop(currentTime) {
+            if (gameOver) return;
+
+            const deltaTime = (currentTime - lastTime) / 1000; // Convertir a segundos
+            lastTime = currentTime;
+
+            // Actualizar temporizador
+            gameTimer -= deltaTime;
+            if (gameTimer <= 0) {
+                gameTimer = 0;
+                // Si todos los enemigos han sido destruidos, avanza de ronda
+                if (enemies.filter(e => e.alive).length === 0) {
+                    nextRound();
+                } else {
+                    // Si el tiempo se acaba y quedan enemigos, Game Over
+                    endGame();
+                    return;
+                }
+            }
+            timerDisplay.textContent = gameTimer.toFixed(1);
+
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Actualizar y dibujar entidades
+            player.update(deltaTime);
+            if (player.alive) player.draw();
+
+            bullets.forEach((bullet, index) => {
+                bullet.update(deltaTime);
+                if (bullet.isOffscreen()) {
+                    bullets.splice(index, 1);
+                } else {
+                    bullet.draw();
+                }
+            });
+
+            enemies.forEach(enemy => {
+                enemy.update(deltaTime);
+                if (enemy.alive) enemy.draw();
+            });
+
+            // Actualizar y dibujar ecos y sus balas
+            echoes.forEach(echo => {
+                echo.update(); // Ecos usan su propio contador de frames, no deltaTime
+                if (echo.alive) echo.draw();
+            });
+
+            echoBullets.forEach((bullet, index) => {
+                bullet.update(deltaTime);
+                if (bullet.isOffscreen()) {
+                    echoBullets.splice(index, 1);
+                } else {
+                    bullet.draw();
+                }
+            });
+
+            // Actualizar y dibujar partículas
+            particles.forEach((p, index) => {
+                p.update(deltaTime);
+                if (p.lifetime <= 0) {
+                    particles.splice(index, 1);
+                } else {
+                    p.draw();
+                }
+            });
+
+
+            // --- Detección de Colisiones ---
+
+            // Balas del jugador vs Enemigos
+            bullets.filter(b => b.shooterType === 'player').forEach((bullet, bIndex) => {
+                enemies.forEach(enemy => {
+                    if (enemy.alive && isColliding(bullet, enemy)) {
+                        createExplosion(enemy.x, enemy.y, enemy.color);
+                        enemy.alive = false;
+                        bullets.splice(bIndex, 1);
+                        score += 10;
+                        scoreDisplay.textContent = score;
+                    }
+                });
+            });
+
+            // Balas enemigas vs Jugador
+            bullets.filter(b => b.shooterType === 'enemy').forEach((bullet, bIndex) => {
+                if (player.alive && isColliding(bullet, player)) {
+                    createExplosion(player.x, player.y, player.color);
+                    player.alive = false;
+                    bullets.splice(bIndex, 1);
+                    endGame();
+                }
+            });
+
+            // Balas enemigas vs Ecos
+            bullets.filter(b => b.shooterType === 'enemy').forEach(bullet => {
+                echoes.forEach(echo => {
+                    if (echo.alive && isColliding(bullet, echo)) {
+                        createExplosion(echo.x, echo.y, echo.color);
+                        echo.alive = false;
+                    }
+                });
+            });
+
+            // Balas de Ecos vs Jugador (¡La paradoja!)
+            echoBullets.forEach((bullet, bIndex) => {
+                if (player.alive && isColliding(bullet, player)) {
+                    createExplosion(player.x, player.y, player.color);
+                    player.alive = false;
+                    echoBullets.splice(bIndex, 1);
+                    endGame();
+                }
+            });
+
+
+            // Comprobar si todos los enemigos están destruidos para pasar de ronda antes del tiempo
+            if (enemies.filter(e => e.alive).length === 0 && !gameOver) {
+                nextRound();
+                return; // Evita actualizar el juego después de pasar de ronda
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function isColliding(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.size &&
+                   rect1.x + rect1.size > rect2.x &&
+                   rect1.y < rect2.y + rect2.size &&
+                   rect1.y + rect1.size > rect2.y;
+        }
+
+        function endGame() {
+            gameOver = true;
+            finalRoundDisplay.textContent = currentRound;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // --- Event Listeners ---
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left;
+            mousePos.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            if (!gameOver) player.shooting = true;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            player.shooting = false;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        restartButton.addEventListener('click', () => {
+            resetGame();
+            lastTime = performance.now(); // Resetear el tiempo para la nueva partida
+            requestAnimationFrame(gameLoop);
+        });
+
+        // Iniciar el juego
+        resetGame();
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
