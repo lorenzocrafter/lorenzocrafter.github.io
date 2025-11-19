@@ -3,101 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Neon Overdrive</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <title>Neon Velocity: Overdrive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
     </script>
 
     <style>
         :root {
-            --c-cyan: #00f3ff;
-            --c-pink: #ff00aa;
-            --c-bg: #020205;
+            --c-primary: #00f3ff;
+            --c-secondary: #ff00aa;
+            --c-accent: #ffee00;
+            --bg-ui: rgba(2, 2, 10, 0.9);
         }
+        
+        * { box-sizing: border-box; }
 
-        body { margin: 0; overflow: hidden; background: var(--c-bg); font-family: 'Orbitron', sans-serif; color: white; user-select: none; }
+        body { 
+            margin: 0; overflow: hidden; background: #000; 
+            font-family: 'Orbitron', sans-serif; color: white; 
+            user-select: none; -webkit-user-select: none;
+        }
         
         #canvas-container { position: absolute; inset: 0; z-index: 1; }
         
-        /* UI INTERFACE */
+        /* UI LAYERS */
         #ui-layer {
             position: absolute; inset: 0; z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
         /* HUD */
-        .hud {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 30px;
+        .hud-panel {
+            position: absolute; top: 0; width: 100%; padding: 20px;
             display: flex; justify-content: space-between; pointer-events: none;
-            box-sizing: border-box;
+            text-shadow: 0 0 10px var(--c-primary);
         }
-        
-        .hud-stats {
-            text-align: left; text-shadow: 0 0 10px var(--c-cyan);
-        }
-        .hud-credits {
-            text-align: right; text-shadow: 0 0 10px var(--c-pink);
-        }
-        .big-text { font-size: 2rem; font-weight: 900; line-height: 1; }
-        .label { font-family: 'Rajdhani'; font-size: 1rem; opacity: 0.7; letter-spacing: 2px; }
+        .hud-score { font-size: 2rem; font-weight: 900; letter-spacing: 2px; }
+        .hud-sub { font-family: 'Share Tech Mono'; font-size: 1rem; color: var(--c-primary); }
+        .hud-credits { text-align: right; color: var(--c-accent); }
 
-        /* MENUS */
-        .screen {
-            background: rgba(2, 2, 5, 0.85); backdrop-filter: blur(15px);
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 0 100px rgba(0, 243, 255, 0.15);
-            padding: 50px; width: 90%; max-width: 600px;
-            border-radius: 2px; text-align: center;
-            pointer-events: auto;
-            display: none; flex-direction: column; gap: 25px;
-            transform: scale(0.95); opacity: 0; transition: all 0.4s ease;
+        /* SPEEDOMETER */
+        .speed-bar-container {
+            position: absolute; bottom: 20px; right: 20px; width: 200px; height: 10px;
+            background: rgba(255,255,255,0.1); transform: skewX(-20deg); border: 1px solid #444;
         }
-        .screen.active { display: flex; transform: scale(1); opacity: 1; }
+        .speed-bar {
+            height: 100%; width: 0%; background: var(--c-secondary);
+            box-shadow: 0 0 15px var(--c-secondary); transition: width 0.1s;
+        }
+
+        /* SCREENS */
+        .screen {
+            background: var(--bg-ui); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0,0,0,0.5);
+            padding: 40px; width: 90%; max-width: 500px;
+            border-radius: 2px; text-align: center;
+            pointer-events: auto; opacity: 0; transform: scale(0.9);
+            transition: 0.3s ease; display: none; flex-direction: column; gap: 20px;
+            position: relative; overflow: hidden;
+        }
+        .screen::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--c-secondary), var(--c-primary));
+        }
+        .screen.active { opacity: 1; transform: scale(1); display: flex; }
 
         h1 {
-            font-size: 3.5rem; margin: 0; letter-spacing: 6px;
-            background: linear-gradient(to bottom, #fff, var(--c-cyan)); 
+            font-size: 3rem; margin: 0; letter-spacing: 4px; line-height: 1;
+            background: linear-gradient(180deg, #fff, var(--c-primary));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px var(--c-cyan));
+            filter: drop-shadow(0 0 10px var(--c-primary));
         }
 
-        /* BOTONES FUTURISTAS */
+        /* BUTTONS */
         button {
-            background: rgba(0, 243, 255, 0.05); 
-            border: 1px solid var(--c-cyan); 
-            color: var(--c-cyan);
-            padding: 15px 40px; font-family: 'Orbitron'; font-size: 1.1rem; 
-            cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 3px;
-            clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
+            background: rgba(0, 243, 255, 0.1); border: 1px solid var(--c-primary);
+            color: var(--c-primary); padding: 15px; font-family: 'Orbitron'; font-weight: bold;
+            font-size: 1.2rem; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+            transition: 0.2s; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
-        button:hover { 
-            background: var(--c-cyan); color: black; 
-            box-shadow: 0 0 30px var(--c-cyan);
-        }
-        
-        button.secondary { border-color: var(--c-pink); color: var(--c-pink); background: rgba(255, 0, 170, 0.05); }
-        button.secondary:hover { background: var(--c-pink); color: white; box-shadow: 0 0 30px var(--c-pink); }
+        button:hover { background: var(--c-primary); color: black; box-shadow: 0 0 30px var(--c-primary); }
+        button.secondary { border-color: var(--c-secondary); color: var(--c-secondary); background: rgba(255,0,170,0.1); }
+        button.secondary:hover { background: var(--c-secondary); color: white; box-shadow: 0 0 30px var(--c-secondary); }
 
         /* SHOP */
-        .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 10px 0; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 300px; overflow-y: auto; margin: 10px 0; }
         .shop-item {
-            background: rgba(255,255,255,0.03); border: 1px solid #444; padding: 15px; cursor: pointer; transition: 0.2s;
+            background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 15px;
+            cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center;
         }
-        .shop-item:hover { border-color: white; background: rgba(255,255,255,0.1); transform: translateY(-2px); }
-        .shop-item.active { border-color: var(--c-cyan); box-shadow: inset 0 0 20px rgba(0,243,255,0.2); }
-        .shop-item.locked { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
-        .color-preview { width: 100%; height: 40px; margin-bottom: 10px; box-shadow: 0 0 15px currentColor; }
+        .shop-item:hover { border-color: white; background: rgba(255,255,255,0.1); }
+        .shop-item.owned { border-color: var(--c-primary); }
+        .shop-item.equipped { background: rgba(0, 243, 255, 0.2); border-color: var(--c-primary); box-shadow: inset 0 0 15px var(--c-primary); }
+        .shop-item.locked { opacity: 0.5; filter: grayscale(1); }
+        
+        .color-dot { width: 30px; height: 30px; border-radius: 50%; margin-bottom: 10px; box-shadow: 0 0 10px currentColor; }
 
-        /* MOBILE CONTROLS */
-        #mobile-overlay { display: none; position: absolute; bottom: 0; width: 100%; height: 40%; z-index: 99; }
-        .touch-zone { width: 50%; height: 100%; float: left; }
+        /* MOBILE */
+        #touch-controls { display: none; position: absolute; bottom: 0; width: 100%; height: 40%; z-index: 20; }
+        .t-zone { width: 50%; height: 100%; float: left; }
     </style>
 </head>
 <body>
@@ -105,201 +117,157 @@
     <div id="canvas-container"></div>
 
     <div id="ui-layer">
-        <div class="hud" id="hud" style="display: none;">
-            <div class="hud-stats">
-                <div class="label">DISTANCE</div>
-                <div class="big-text" id="score-el">0</div>
+        <div id="hud" style="display: none;">
+            <div class="hud-panel">
+                <div>
+                    <div class="hud-score" id="score-el">0</div>
+                    <div class="hud-sub">DISTANCE</div>
+                </div>
+                <div class="hud-credits">
+                    <div class="hud-score" style="color:var(--c-accent)">$<span id="credits-el">0</span></div>
+                    <div class="hud-sub">CREDITS</div>
+                </div>
             </div>
-            <div class="hud-credits">
-                <div class="label">CREDITS</div>
-                <div class="big-text" id="credits-el">0</div>
-            </div>
+            <div class="speed-bar-container"><div class="speed-bar" id="speed-bar"></div></div>
         </div>
 
         <div id="menu-screen" class="screen active">
-            <h1>NEON<br>OVERDRIVE</h1>
-            <p style="color:#aaa; font-family:'Rajdhani'; margin:0;">HIGH SCORE: <span id="menu-best" style="color:white">0</span></p>
-            <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
-                <button onclick="Game.start()">IGNITION</button>
-            </div>
+            <h1>NEON VELOCITY<br><span style="font-size:1.5rem; letter-spacing:8px; color:var(--c-secondary)">OVERDRIVE</span></h1>
+            <p style="font-family:'Share Tech Mono'; color:#aaa;">HIGH SCORE: <span id="menu-high">0</span></p>
+            <button onclick="Game.start()">START ENGINE</button>
             <button class="secondary" onclick="UI.openShop()">GARAGE</button>
+            <div style="font-size:0.8rem; margin-top:10px; opacity:0.6;">AUDIO ENABLED • AUTO-SAVE ON</div>
         </div>
 
         <div id="shop-screen" class="screen">
-            <h2 style="color:var(--c-cyan); margin:0;">GARAGE</h2>
-            <div class="label">BALANCE: $<span id="shop-credits">0</span></div>
+            <h2 style="color:var(--c-primary); margin:0;">GARAGE</h2>
+            <div class="hud-sub">BALANCE: $<span id="shop-balance">0</span></div>
             <div class="shop-grid" id="shop-list"></div>
             <button class="secondary" onclick="UI.openMenu()">BACK</button>
         </div>
 
         <div id="gameover-screen" class="screen">
-            <h1 style="font-size:3rem; color:var(--c-pink); text-shadow:0 0 20px red;">CRITICAL<br>FAILURE</h1>
-            <div>
-                <div class="label">DISTANCE RUN</div>
-                <div class="big-text" id="go-score">0</div>
+            <h1 style="color:var(--c-secondary); text-shadow: 0 0 30px red;">CRITICAL<br>FAILURE</h1>
+            <div style="margin: 20px 0;">
+                <div class="hud-sub">RUN DISTANCE</div>
+                <div class="hud-score" id="go-score">0</div>
+                <div class="hud-sub" style="margin-top:10px;">EARNINGS</div>
+                <div class="hud-score" style="color:var(--c-accent)" id="go-earnings">+0</div>
             </div>
-            <div>
-                <div class="label">CREDITS EARNED</div>
-                <div class="big-text" style="color:var(--c-cyan)">+<span id="go-credits">0</span></div>
-            </div>
-            <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
-                <button onclick="Game.start()">RETRY</button>
-                <button class="secondary" onclick="UI.openMenu()">MENU</button>
-            </div>
+            <button onclick="Game.start()">REBOOT SYSTEM</button>
+            <button class="secondary" onclick="UI.openMenu()">MENU</button>
         </div>
     </div>
 
-    <div id="mobile-overlay">
-        <div class="touch-zone" id="t-left"></div>
-        <div class="touch-zone" id="t-right"></div>
+    <div id="touch-controls">
+        <div class="t-zone" id="btn-left"></div>
+        <div class="t-zone" id="btn-right"></div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
-        // IMPORTAMOS EFECTOS DE POST-PROCESADO (BLOOM)
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- CONFIGURACIÓN ---
-        const CONFIG = {
-            tunnelRadius: 40,
-            speedBase: 1.5,
-            camDistance: 35,  // ¡AQUÍ ESTÁ LA CLAVE! Más lejos
-            camHeight: 12,    // Más arriba para ver la estela
-            colors: [0x00f3ff, 0xff00aa, 0x00ff66, 0xffea00, 0xffffff]
+        // --- AUDIO ENGINE (Synth) ---
+        const Audio = {
+            ctx: null,
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playEngine(speedRatio) {
+                // Engine hum logic would go here, simpler to just play SFX on events
+            },
+            sfxCollect() { this.playTone(880, 'sine', 0.1, 0.1); this.playTone(1760, 'square', 0.1, 0.05); },
+            sfxCrash() { this.playTone(100, 'sawtooth', 0.5, 0.3); this.playTone(50, 'square', 0.8, 0.3); },
+            sfxStart() { this.playTone(440, 'triangle', 0.5, 0.2); }
         };
 
-        // --- DATA ---
+        // --- CONFIG ---
+        const C = {
+            radius: 40,
+            colors: [0x00f3ff, 0xff00aa, 0x00ff66, 0xffea00, 0xffffff],
+            fov: 80
+        };
+
+        // --- SAVE SYSTEM ---
         const DB = {
-            state: {
-                credits: 0, highScore: 0, 
-                unlocked: ['ship_0'], equipped: 'ship_0'
-            },
+            data: { credits: 0, high: 0, unlocked: ['s1'], equipped: 's1' },
             ships: [
-                { id: 'ship_0', name: 'Pulse', color: 0x00f3ff, price: 0 },
-                { id: 'ship_1', name: 'Viper', color: 0xff00aa, price: 300 },
-                { id: 'ship_2', name: 'Venom', color: 0x00ff66, price: 600 },
-                { id: 'ship_3', name: 'Solar', color: 0xffea00, price: 1200 },
-                { id: 'ship_4', name: 'Ghost', color: 0xffffff, price: 2500 }
+                { id: 's1', name: 'Pulse', color: 0x00f3ff, price: 0, speed: 1, handling: 1 },
+                { id: 's2', name: 'Viper', color: 0xff00aa, price: 500, speed: 1.2, handling: 1.2 },
+                { id: 's3', name: 'Venom', color: 0x00ff66, price: 1200, speed: 1.3, handling: 1.5 },
+                { id: 's4', name: 'Solar', color: 0xffea00, price: 2500, speed: 1.5, handling: 1.1 }
             ],
-            load() {
-                const s = localStorage.getItem('neon_od_save');
-                if(s) this.state = JSON.parse(s);
+            init() {
+                const s = localStorage.getItem('nv_od_save');
+                if (s) this.data = JSON.parse(s);
             },
-            save() { localStorage.setItem('neon_od_save', JSON.stringify(this.state)); },
-            getColor() { return this.ships.find(s => s.id === this.state.equipped).color; }
+            save() { localStorage.setItem('nv_od_save', JSON.stringify(this.data)); },
+            getShip() { return this.ships.find(s => s.id === this.data.equipped); }
         };
-
-        // --- VISUAL FX MANAGER ---
-        class VFX {
-            constructor(scene) {
-                this.scene = scene;
-                this.particles = [];
-                // Geometría reutilizable para partículas
-                this.geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-                this.mat = new THREE.MeshBasicMaterial({ 
-                    color: 0xffffff, transparent: true, opacity: 1 
-                });
-            }
-
-            emitTrail(pos, color) {
-                const mesh = new THREE.Mesh(this.geo, this.mat.clone());
-                mesh.position.copy(pos);
-                // Aleatoriedad para efecto fuego
-                mesh.position.x += (Math.random()-0.5)*1;
-                mesh.position.y += (Math.random()-0.5)*1;
-                mesh.material.color.setHex(color);
-                mesh.userData = { life: 1.0, speed: (Math.random()*0.5)+0.5 };
-                
-                this.scene.add(mesh);
-                this.particles.push(mesh);
-            }
-
-            update() {
-                for(let i = this.particles.length - 1; i >= 0; i--) {
-                    const p = this.particles[i];
-                    p.userData.life -= 0.03; // Desvanecimiento
-                    p.position.z += 2.0; // Se alejan rápido (efecto velocidad)
-                    p.scale.setScalar(p.userData.life * 1.5);
-                    p.rotation.z += 0.1;
-                    p.material.opacity = p.userData.life;
-
-                    if(p.userData.life <= 0) {
-                        this.scene.remove(p);
-                        this.particles.splice(i, 1);
-                    }
-                }
-            }
-            
-            reset() {
-                this.particles.forEach(p => this.scene.remove(p));
-                this.particles = [];
-            }
-        }
 
         // --- UI ---
         const UI = {
-            screens: { menu:null, shop:null, gameover:null, hud:null },
             els: {},
             init() {
-                ['menu','shop','gameover'].forEach(id => 
-                    this.screens[id] = document.getElementById(id+'-screen'));
-                this.screens.hud = document.getElementById('hud');
-                
-                ['score','credits','menu-best','shop-credits','go-score','go-credits'].forEach(id =>
-                    this.els[id] = document.getElementById(id.includes('-') ? id : id+'-el'));
-                
+                ['menu', 'shop', 'gameover', 'hud'].forEach(id => this.els[id] = document.getElementById(id + '-screen') || document.getElementById(id));
+                ['score', 'credits', 'menu-high', 'shop-balance', 'go-score', 'go-earnings'].forEach(id => this.els[id] = document.getElementById(id.includes('-') ? id : id + '-el'));
                 this.els.shopList = document.getElementById('shop-list');
-                DB.load();
-                this.update();
+                this.els.speedBar = document.getElementById('speed-bar');
+                DB.init();
+                this.updateLabels();
             },
-            show(id) {
-                Object.values(this.screens).forEach(s => s.classList.remove('active'));
-                if(id === 'hud') this.screens.hud.style.display = 'flex';
-                else {
-                    this.screens.hud.style.display = 'none';
-                    this.screens[id].classList.add('active');
-                }
+            show(screen) {
+                Object.values(this.els).forEach(e => { if (e.classList.contains('screen')) e.classList.remove('active'); });
+                this.els.hud.style.display = 'none';
+                if (screen === 'hud') this.els.hud.style.display = 'block';
+                else if (this.els[screen]) this.els[screen].classList.add('active');
             },
-            update() {
-                this.els['menu-best'].innerText = Math.floor(DB.state.highScore);
-                this.els['shop-credits'].innerText = DB.state.credits;
+            updateLabels() {
+                this.els['menu-high'].innerText = Math.floor(DB.data.high);
+                this.els['shop-balance'].innerText = DB.data.credits;
+                this.els['credits'].innerText = DB.data.credits;
             },
-            openMenu() { this.update(); this.show('menu'); },
+            openMenu() { this.updateLabels(); this.show('menu'); },
             openShop() {
+                this.els['shop-balance'].innerText = DB.data.credits;
                 this.els.shopList.innerHTML = '';
                 DB.ships.forEach(ship => {
-                    const unlocked = DB.state.unlocked.includes(ship.id);
-                    const equipped = DB.state.equipped === ship.id;
+                    const owned = DB.data.unlocked.includes(ship.id);
+                    const equipped = DB.data.equipped === ship.id;
                     const el = document.createElement('div');
-                    el.className = `shop-item ${equipped?'active':''} ${!unlocked?'locked':''}`;
+                    el.className = `shop-item ${owned ? 'owned' : 'locked'} ${equipped ? 'equipped' : ''}`;
                     el.innerHTML = `
-                        <div class="color-preview" style="background:#${ship.color.toString(16)}; box-shadow:0 0 10px #${ship.color.toString(16)}"></div>
-                        <div style="font-size:0.8rem; font-weight:bold">${ship.name}</div>
-                        <div style="color:${unlocked?'#fff':'var(--c-pink)'}">${unlocked?(equipped?'EQUIPPED':'OWNED'):'$'+ship.price}</div>
+                        <div class="color-dot" style="background:#${ship.color.toString(16)}; box-shadow:0 0 10px #${ship.color.toString(16)}"></div>
+                        <div style="font-weight:bold; font-size:0.9rem">${ship.name}</div>
+                        <div style="font-size:0.8rem; opacity:0.8">${owned ? (equipped ? 'EQUIPPED' : 'OWNED') : '$' + ship.price}</div>
                     `;
-                    
-                    if(!unlocked) {
-                        // Lógica de compra desbloqueada al hacer click si tienes dinero (simplificado para UI limpia)
-                        el.classList.remove('locked'); // Visual hack para permitir click
-                        el.style.opacity = "0.6";
-                    }
-                    
                     el.onclick = () => {
-                        if(unlocked) {
-                            DB.state.equipped = ship.id;
+                        if (owned) {
+                            DB.data.equipped = ship.id;
                             DB.save();
                             this.openShop();
-                        } else if(DB.state.credits >= ship.price) {
-                            DB.state.credits -= ship.price;
-                            DB.state.unlocked.push(ship.id);
-                            DB.state.equipped = ship.id;
+                        } else if (DB.data.credits >= ship.price) {
+                            DB.data.credits -= ship.price;
+                            DB.data.unlocked.push(ship.id);
+                            DB.data.equipped = ship.id;
                             DB.save();
                             this.openShop();
-                        } else {
-                            el.style.borderColor = 'red';
-                            setTimeout(()=>el.style.borderColor='#444', 200);
                         }
                     };
                     this.els.shopList.appendChild(el);
@@ -308,379 +276,323 @@
             }
         };
 
-        // --- ENGINE ---
-        class Engine {
+        // --- 3D ENGINE ---
+        class GameEngine {
             constructor() {
-                this.initThree();
-                this.initWorld();
-                this.initPlayer();
-                this.vfx = new VFX(this.scene);
-                
-                this.state = { playing: false, speed: 0, score: 0, angle: -Math.PI/2, velocity: 0 };
-                this.keys = { left: false, right: false };
-                
-                this.bindEvents();
-                UI.init();
-                UI.openMenu();
-                
-                this.loop();
-            }
-
-            initThree() {
                 this.scene = new THREE.Scene();
-                // Niebla densa para ocultar el final del tunel
-                this.scene.fog = new THREE.FogExp2(0x020205, 0.015);
+                this.scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+                this.camera = new THREE.PerspectiveCamera(C.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
                 
-                this.camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-                
-                this.renderer = new THREE.WebGLRenderer({ antialias: false }); // Bloom needs false usually for perf
+                this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance limit
-                this.renderer.toneMapping = THREE.ReinhardToneMapping;
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization
                 document.getElementById('canvas-container').appendChild(this.renderer.domElement);
 
-                // LUCES
-                const ambient = new THREE.AmbientLight(0xffffff, 0.1); // Oscuro
-                this.scene.add(ambient);
-                
-                // Luz direccional que simula "el final del tunel"
-                const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-                dirLight.position.set(0, 0, -100);
-                this.scene.add(dirLight);
-
-                // POST-PROCESADO (BLOOM)
+                // POST PROCESSING (BLOOM)
                 this.composer = new EffectComposer(this.renderer);
                 this.composer.addPass(new RenderPass(this.scene, this.camera));
-                
-                const bloom = new UnrealBloomPass(
-                    new THREE.Vector2(window.innerWidth, window.innerHeight),
-                    1.5, 0.4, 0.85 // Strength, Radius, Threshold
-                );
+                const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
                 this.composer.addPass(bloom);
-            }
 
-            initWorld() {
+                // LIGHTS
+                const light = new THREE.DirectionalLight(0xffffff, 1);
+                light.position.set(0, 10, 10);
+                this.scene.add(light);
+                this.scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+                // OBJECTS
                 this.tunnel = new THREE.Group();
                 this.scene.add(this.tunnel);
+                this.playerGroup = new THREE.Group();
+                this.scene.add(this.playerGroup);
+                
                 this.segments = [];
                 this.obstacles = [];
                 this.coins = [];
+                this.particles = [];
 
-                // Generar estrellas de fondo
-                const starsGeo = new THREE.BufferGeometry();
-                const starCount = 1000;
-                const posArray = new Float32Array(starCount * 3);
-                for(let i=0; i<starCount*3; i++) posArray[i] = (Math.random()-0.5)*600;
-                starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-                const starsMat = new THREE.PointsMaterial({size: 0.5, color: 0xffffff});
-                this.scene.add(new THREE.Points(starsGeo, starsMat));
+                this.state = { playing: false, score: 0, speed: 0, angle: -Math.PI/2, velocity: 0 };
+                this.inputs = { left: false, right: false };
+
+                this.buildPlayer();
+                this.initTunnel();
+                this.bindEvents();
                 
-                // Generar Tunel Inicial
-                for(let i=0; i<50; i++) this.spawnSegment(-i * 20);
+                UI.init();
+                UI.openMenu();
+                this.loop();
+            }
+
+            buildPlayer() {
+                // Clear previous
+                while(this.playerGroup.children.length > 0) this.playerGroup.remove(this.playerGroup.children[0]);
+                
+                const shipData = DB.getShip();
+                const color = shipData.color;
+
+                // Cool geometry construction
+                const body = new THREE.Mesh(
+                    new THREE.ConeGeometry(1, 4, 4),
+                    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4 })
+                );
+                body.rotation.x = Math.PI/2;
+                body.rotation.y = Math.PI/4;
+                this.playerGroup.add(body);
+
+                // Neon Strips
+                const stripGeo = new THREE.BoxGeometry(0.2, 3, 0.2);
+                const stripMat = new THREE.MeshBasicMaterial({ color: color });
+                const strip1 = new THREE.Mesh(stripGeo, stripMat);
+                strip1.position.set(0.6, 0, 0.5);
+                strip1.rotation.x = Math.PI/2;
+                this.playerGroup.add(strip1);
+                
+                const strip2 = strip1.clone();
+                strip2.position.set(-0.6, 0, 0.5);
+                this.playerGroup.add(strip2);
+
+                // Engine
+                const eng = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.4, 0.1, 1, 8),
+                    new THREE.MeshBasicMaterial({ color: 0xffffff })
+                );
+                eng.rotation.x = Math.PI/2;
+                eng.position.z = 2;
+                this.playerGroup.add(eng);
+                this.enginePos = eng; // Ref for particles
+            }
+
+            initTunnel() {
+                for(let i=0; i<40; i++) this.spawnSegment(-i * 20);
             }
 
             spawnSegment(z) {
-                // Hexágono con borde brillante
+                // Hexagon Tunnel Rings
                 const pts = [];
-                const segs = 6;
-                const r = CONFIG.tunnelRadius;
-                for(let i=0; i<=segs; i++) {
-                    const t = (i/segs)*Math.PI*2;
+                const r = C.radius;
+                for(let i=0; i<=6; i++) {
+                    const t = (i/6) * Math.PI * 2;
                     pts.push(new THREE.Vector3(Math.cos(t)*r, Math.sin(t)*r, 0));
                 }
-                
                 const geo = new THREE.BufferGeometry().setFromPoints(pts);
-                const mat = new THREE.LineBasicMaterial({ color: 0x333333 });
+                const mat = new THREE.LineBasicMaterial({ color: 0x444444 });
                 
-                // Variación: Anillos brillantes cada tanto
-                if(Math.random() > 0.8) {
-                    mat.color.setHex(0x444444);
-                    mat.opacity = 0.5;
-                }
+                // Grid Effect
+                if (Math.abs(z) % 100 < 20) mat.color.setHex(0x00f3ff); // Blue lines periodically
 
-                const ring = new THREE.Line(geo, mat);
-                ring.position.z = z;
-                this.tunnel.add(ring);
-                this.segments.push(ring);
+                const line = new THREE.Line(geo, mat);
+                line.position.z = z;
+                this.tunnel.add(line);
+                this.segments.push(line);
 
-                // Spawneo
-                if(z < -100 && Math.random() < 0.35) {
-                    this.spawnEntity(z);
-                }
+                // Spawns
+                if(z < -100 && Math.random() < 0.4) this.spawnEntity(z);
             }
 
             spawnEntity(z) {
                 const isObs = Math.random() > 0.3;
-                const angle = Math.floor(Math.random()*6) * (Math.PI/3); // Alinear a paredes hexágono
-                const r = CONFIG.tunnelRadius - 4;
+                const angle = Math.floor(Math.random()*6) * (Math.PI/3); // Snap to hex walls
+                const r = C.radius - 5;
                 const x = Math.cos(angle)*r;
                 const y = Math.sin(angle)*r;
 
-                if(isObs) {
-                    // Obstáculo: Cubo Neón Rojo
-                    const geo = new THREE.BoxGeometry(6, 2, 6);
-                    const mat = new THREE.MeshStandardMaterial({ 
-                        color: 0x000000, emissive: 0xff0000, emissiveIntensity: 2 
-                    });
+                if (isObs) {
+                    const geo = new THREE.BoxGeometry(8, 2, 2);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
                     const mesh = new THREE.Mesh(geo, mat);
                     mesh.position.set(x, y, z);
                     mesh.rotation.z = angle + Math.PI/2;
                     this.scene.add(mesh);
-                    this.obstacles.push({mesh, angle});
+                    this.obstacles.push(mesh);
                 } else {
-                    // Moneda: Diamante Amarillo
                     const geo = new THREE.OctahedronGeometry(1.5);
                     const mat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
                     const mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.set(x*0.9, y*0.9, z); // Flotando un poco
+                    mesh.position.set(x * 0.9, y * 0.9, z);
                     this.scene.add(mesh);
-                    this.coins.push({mesh, angle});
+                    this.coins.push(mesh);
                 }
             }
 
-            initPlayer() {
-                this.player = new THREE.Group();
+            spawnParticle() {
+                const geo = new THREE.PlaneGeometry(0.8, 0.8);
+                const mat = new THREE.MeshBasicMaterial({ 
+                    color: DB.getShip().color, transparent: true, opacity: 0.8, side: THREE.DoubleSide 
+                });
+                const mesh = new THREE.Mesh(geo, mat);
                 
-                // DISEÑO DE NAVE (Tipo F-Zero)
-                // Cuerpo central
-                const body = new THREE.Mesh(
-                    new THREE.ConeGeometry(1.5, 7, 4),
-                    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 })
-                );
-                body.rotation.x = Math.PI/2;
-                body.rotation.y = Math.PI/4;
-                this.player.add(body);
-
-                // Cabina brillante
-                const cockpit = new THREE.Mesh(
-                    new THREE.BoxGeometry(1, 0.5, 2),
-                    new THREE.MeshBasicMaterial({ color: 0x000000 }) // El color viene del estado
-                );
-                cockpit.position.set(0, 0.8, 0.5);
-                this.cockpitMat = cockpit.material;
-                this.player.add(cockpit);
-
-                // Alas
-                const wings = new THREE.Mesh(
-                    new THREE.BoxGeometry(6, 0.1, 3),
-                    new THREE.MeshStandardMaterial({ color: 0x222222 })
-                );
-                wings.position.set(0, 0, 1.5);
-                this.player.add(wings);
-
-                // Motores (Emisores de partículas)
-                const engGeo = new THREE.CylinderGeometry(0.3, 0.1, 1, 8);
-                engGeo.rotateX(Math.PI/2);
-                const engMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const worldPos = new THREE.Vector3();
+                this.enginePos.getWorldPosition(worldPos);
+                mesh.position.copy(worldPos);
+                mesh.position.x += (Math.random()-0.5); 
                 
-                this.leftEng = new THREE.Mesh(engGeo, engMat);
-                this.leftEng.position.set(-1.5, 0, 3.5);
-                this.player.add(this.leftEng);
-                
-                this.rightEng = new THREE.Mesh(engGeo, engMat);
-                this.rightEng.position.set(1.5, 0, 3.5);
-                this.player.add(this.rightEng);
-
-                this.scene.add(this.player);
-                this.updateShipColor();
-            }
-
-            updateShipColor() {
-                const c = DB.getColor();
-                this.cockpitMat.color.setHex(c);
-                // También cambiamos la luz del túnel para ambientar
-                this.scene.fog.color.setHex(0x020205);
+                this.scene.add(mesh);
+                this.particles.push({ mesh, life: 1.0 });
             }
 
             bindEvents() {
-                const onKey = (k, v) => {
-                    if(k==='ArrowLeft') this.keys.left = v;
-                    if(k==='ArrowRight') this.keys.right = v;
+                const k = (key, v) => {
+                    if(key==='ArrowLeft') this.inputs.left = v;
+                    if(key==='ArrowRight') this.inputs.right = v;
                 };
-                window.addEventListener('keydown', e => onKey(e.key, true));
-                window.addEventListener('keyup', e => onKey(e.key, false));
-
-                // Mobile
-                const tl = document.getElementById('t-left');
-                const tr = document.getElementById('t-right');
-                if('ontouchstart' in window) {
-                    document.getElementById('mobile-overlay').style.display = 'block';
-                    tl.addEventListener('touchstart', e=>{e.preventDefault(); this.keys.left=true;});
-                    tl.addEventListener('touchend', e=>{e.preventDefault(); this.keys.left=false;});
-                    tr.addEventListener('touchstart', e=>{e.preventDefault(); this.keys.right=true;});
-                    tr.addEventListener('touchend', e=>{e.preventDefault(); this.keys.right=false;});
-                }
-                
+                window.addEventListener('keydown', e => k(e.key, true));
+                window.addEventListener('keyup', e => k(e.key, false));
                 window.addEventListener('resize', () => {
                     this.camera.aspect = window.innerWidth/window.innerHeight;
                     this.camera.updateProjectionMatrix();
                     this.renderer.setSize(window.innerWidth, window.innerHeight);
                     this.composer.setSize(window.innerWidth, window.innerHeight);
                 });
+
+                // Touch
+                const tl = document.getElementById('btn-left');
+                const tr = document.getElementById('btn-right');
+                if('ontouchstart' in window) {
+                    document.getElementById('touch-controls').style.display = 'block';
+                    tl.addEventListener('touchstart', e=>{e.preventDefault(); this.inputs.left=true;});
+                    tl.addEventListener('touchend', e=>{e.preventDefault(); this.inputs.left=false;});
+                    tr.addEventListener('touchstart', e=>{e.preventDefault(); this.inputs.right=true;});
+                    tr.addEventListener('touchend', e=>{e.preventDefault(); this.inputs.right=false;});
+                }
             }
 
-            // --- LOGIC ---
             start() {
-                this.reset();
-                this.state.playing = true;
-                this.state.speed = CONFIG.speedBase;
+                Audio.init();
+                Audio.sfxStart();
+                this.buildPlayer(); // Refresh color
+                
+                this.state = { 
+                    playing: true, score: 0, 
+                    speed: 1.5 * (DB.getShip().speed || 1), // Base speed mod
+                    angle: -Math.PI/2, velocity: 0 
+                };
+
+                // Cleanup
+                this.obstacles.forEach(o => this.scene.remove(o));
+                this.coins.forEach(c => this.scene.remove(c));
+                this.particles.forEach(p => this.scene.remove(p.mesh));
+                this.obstacles = []; this.coins = []; this.particles = [];
+
                 UI.show('hud');
             }
 
-            reset() {
-                this.state.score = 0;
-                this.state.speed = 0;
-                this.state.angle = -Math.PI/2;
-                this.state.velocity = 0;
-                
-                this.obstacles.forEach(o => this.scene.remove(o.mesh));
-                this.obstacles = [];
-                this.coins.forEach(c => this.scene.remove(c.mesh));
-                this.coins = [];
-                
-                this.vfx.reset();
-                this.updateShipColor();
-            }
-
             gameOver() {
+                Audio.sfxCrash();
                 this.state.playing = false;
-                if(this.state.score > DB.state.highScore) DB.state.highScore = this.state.score;
+                
+                if (this.state.score > DB.data.high) DB.data.high = this.state.score;
                 DB.save();
-                UI.triggerGameOver(this.state.score, this.state.credits - parseInt(UI.els.shopCredits.innerText || 0));
-                // Hack simple para mostrar creditos ganados en sesion (credits actual - credits al inicio)
-                // Mejor: UI.triggerGameOver(score, collectedSessionCredits)
+                
+                UI.els['go-score'].innerText = Math.floor(this.state.score);
+                UI.els['go-earnings'].innerText = `+${Math.floor(this.state.score / 10)}`; // Credits based on distance
+                DB.data.credits += Math.floor(this.state.score / 10);
+                DB.save();
+                
+                UI.show('gameover');
             }
 
             update() {
-                if(!this.state.playing) {
-                    // Idle rotation
-                    this.tunnel.rotation.z += 0.001;
-                    this.renderer.render(this.scene, this.camera);
+                if (!this.state.playing) {
+                    this.tunnel.rotation.z += 0.002;
                     return;
                 }
 
-                // 1. FÍSICA DE NAVE (Drift suave)
-                const acc = 0.004;
-                const friction = 0.94;
-                const maxVel = 0.08;
-
-                if(this.keys.left) this.state.velocity += acc;
-                if(this.keys.right) this.state.velocity -= acc;
-                this.state.velocity *= friction;
-                
+                // PHYSICS
+                const handling = 0.008 * (DB.getShip().handling || 1);
+                if (this.inputs.left) this.state.velocity += handling;
+                if (this.inputs.right) this.state.velocity -= handling;
+                this.state.velocity *= 0.92; // Friction
                 this.state.angle += this.state.velocity;
 
-                // 2. POSICIONAMIENTO 3D
-                const r = CONFIG.tunnelRadius - 8; // Volar dentro, no en el borde
+                // MOVEMENT
+                const r = C.radius - 8;
                 const x = Math.cos(this.state.angle) * r;
                 const y = Math.sin(this.state.angle) * r;
                 
-                this.player.position.set(x, y, 0);
+                this.playerGroup.position.set(x, y, 0);
+                this.playerGroup.rotation.z = this.state.angle - Math.PI/2;
+                this.playerGroup.rotation.y = this.state.velocity * 4; // Bank
                 
-                // Rotaciones complejas para realismo
-                this.player.rotation.z = this.state.angle - Math.PI/2; // Alinear al tunel
-                this.player.rotation.y = this.state.velocity * 5; // Banking (inclinacion)
-                this.player.rotation.x = -this.state.speed * 0.05; // Pitch por velocidad
-
-                // 3. CÁMARA (LA CORRECCIÓN GRANDE)
-                // Calculamos posición ideal de la cámara: Detrás y Arriba (relativo al centro del tunel)
-                const camR = r - CONFIG.camHeight; 
-                const camX = Math.cos(this.state.angle) * camR;
-                const camY = Math.sin(this.state.angle) * camR;
+                // CAMERA (Follow Logic)
+                const camX = Math.cos(this.state.angle) * (r - 15);
+                const camY = Math.sin(this.state.angle) * (r - 15);
                 
-                // Interpolación suave (Lerp) para que la cámara no sea rígida
                 this.camera.position.x += (camX - this.camera.position.x) * 0.1;
                 this.camera.position.y += (camY - this.camera.position.y) * 0.1;
-                this.camera.position.z = CONFIG.camDistance;
-                
-                // Mirar un poco adelante de la nave
-                this.camera.lookAt(x*0.5, y*0.5, -50);
-                
-                // Ajustar la rotación Z de la cámara para seguir el giro del mundo
-                this.camera.rotation.z = (this.state.angle - Math.PI/2) * 0.3; // 0.3 factor de suavizado
+                this.camera.position.z = 25;
+                this.camera.lookAt(0, 0, -100);
+                this.camera.rotation.z = (this.state.angle - Math.PI/2) * 0.2;
 
-                // 4. ENTORNO (Mover el mundo hacia el jugador)
-                const spd = this.state.speed;
-                this.state.score += spd * 0.1;
-                this.state.speed += 0.0002; // Aceleración progresiva
-                if(this.state.speed > CONFIG.speedMax) this.state.speed = CONFIG.speedMax;
+                // WORLD MOVEMENT (Illusion of speed)
+                const speed = this.state.speed;
+                this.state.score += speed * 0.1;
+                this.state.speed += 0.0005; // Acceleration
 
-                // Mover segmentos
-                this.segments.forEach(seg => {
-                    seg.position.z += spd;
-                    if(seg.position.z > CONFIG.camDistance) { // Si pasa la camara
-                        seg.position.z -= (this.segments.length * 20);
-                        if(Math.random() < 0.4) this.spawnEntity(seg.position.z);
+                // Move Segments
+                this.segments.forEach(s => {
+                    s.position.z += speed;
+                    if(s.position.z > 30) {
+                        s.position.z -= (this.segments.length * 20);
+                        if(Math.random() < 0.4) this.spawnEntity(s.position.z);
                     }
                 });
 
-                // Mover Obstaculos
+                // Obstacles
                 for(let i=this.obstacles.length-1; i>=0; i--) {
                     const o = this.obstacles[i];
-                    o.mesh.position.z += spd;
-                    
-                    // Colision
-                    if(Math.abs(o.mesh.position.z) < 3) {
-                        if(this.checkHit(o.angle, 0.5)) {
-                            this.gameOver();
-                        }
+                    o.position.z += speed;
+                    // Collision
+                    if(Math.abs(o.position.z) < 5) {
+                        const dist = o.position.distanceTo(this.playerGroup.position);
+                        if(dist < 5) this.gameOver();
                     }
-                    if(o.mesh.position.z > CONFIG.camDistance) {
-                        this.scene.remove(o.mesh);
-                        this.obstacles.splice(i, 1);
-                    }
+                    if(o.position.z > 30) { this.scene.remove(o); this.obstacles.splice(i, 1); }
                 }
 
-                // Mover Monedas
+                // Coins
                 for(let i=this.coins.length-1; i>=0; i--) {
                     const c = this.coins[i];
-                    c.mesh.position.z += spd;
-                    c.mesh.rotation.z += 0.1;
-                    
-                    if(Math.abs(c.mesh.position.z) < 3) {
-                        if(this.checkHit(c.angle, 0.8)) { // Hitbox mas grande
-                            DB.state.credits += 10;
-                            this.scene.remove(c.mesh);
+                    c.position.z += speed;
+                    c.rotation.y += 0.1;
+                    if(Math.abs(c.position.z) < 5) {
+                        if(c.position.distanceTo(this.playerGroup.position) < 5) {
+                            Audio.sfxCollect();
+                            DB.data.credits += 10;
+                            this.scene.remove(c);
                             this.coins.splice(i, 1);
                             continue;
                         }
                     }
-                    if(c.mesh.position.z > CONFIG.camDistance) {
-                        this.scene.remove(c.mesh);
-                        this.coins.splice(i, 1);
-                    }
+                    if(c.position.z > 30) { this.scene.remove(c); this.coins.splice(i, 1); }
                 }
 
-                // VFX
-                const c = DB.getColor();
-                const p1 = new THREE.Vector3(); this.leftEng.getWorldPosition(p1);
-                const p2 = new THREE.Vector3(); this.rightEng.getWorldPosition(p2);
-                this.vfx.emitTrail(p1, c);
-                this.vfx.emitTrail(p2, c);
-                this.vfx.update();
+                // Particles
+                this.spawnParticle();
+                for(let i=this.particles.length-1; i>=0; i--) {
+                    const p = this.particles[i];
+                    p.life -= 0.05;
+                    p.mesh.position.z += speed + 0.5;
+                    p.mesh.scale.setScalar(p.life);
+                    p.mesh.material.opacity = p.life;
+                    if(p.life <= 0) { this.scene.remove(p.mesh); this.particles.splice(i, 1); }
+                }
 
-                // HUD Update
+                // UI Updates
                 UI.els.score.innerText = Math.floor(this.state.score);
-                UI.els.credits.innerText = DB.state.credits;
-
-                // Render Bloom
-                this.composer.render();
-            }
-
-            checkHit(objAngle, tolerance) {
-                let diff = Math.abs(this.state.angle - objAngle);
-                diff = diff % (Math.PI*2);
-                if(diff > Math.PI) diff = (Math.PI*2) - diff;
-                return diff < tolerance;
+                UI.els.credits.innerText = DB.data.credits;
+                UI.els.speedBar.style.width = Math.min(100, (this.state.speed / 4) * 100) + '%';
             }
 
             loop() {
-                requestAnimationFrame(() => this.loop());
+                requestAnimationFrame(this.loop.bind(this));
                 this.update();
+                this.composer.render();
             }
         }
 
-        window.onload = () => { window.Game = new Engine(); };
+        // START
+        window.onload = () => window.Game = new GameEngine();
 
     </script>
 </body>
