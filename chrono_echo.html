@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrono-Echo: Neon Warfare | Blox Games</title>
+    <title>Chrono-Echo DX | Blox Games</title>
     <style>
         body {
             margin: 0;
@@ -16,6 +16,7 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
+            user-select: none;
         }
 
         h1 {
@@ -44,6 +45,9 @@
             position: absolute;
             top: 15px;
             left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
             font-size: 20px;
             font-weight: bold;
             pointer-events: none;
@@ -52,20 +56,28 @@
             z-index: 5;
         }
 
-        #gameOverScreen {
+        .hud-label { color: #aaa; font-size: 14px; }
+        .hud-val { color: #00fff2; }
+
+        /* Pantallas superpuestas (Start / Game Over) */
+        .overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex; /* Flex para centrar */
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 10;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s;
         }
+
+        #startScreen { display: flex; cursor: pointer; }
+        #gameOverScreen { display: none; }
 
         button {
             background: transparent;
@@ -92,17 +104,34 @@
             font-size: 12px; opacity: 0.6; margin-top: 10px; text-align: center;
             color: #aaa; z-index: 2;
         }
+
+        .blink { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <h1>Chrono-Echo</h1>
+    <h1>Chrono-Echo <span style="font-size: 0.6em; color: #ff2a2a">DX</span></h1>
 
     <div id="gameContainer">
         <canvas id="gameCanvas" width="700" height="500"></canvas>
-        <div id="ui">Ecos Activos: <span id="scoreVal">0</span></div>
         
-        <div id="gameOverScreen">
+        <div id="ui">
+            <div>
+                <span class="hud-label">ECOS:</span> <span id="scoreVal" class="hud-val">0</span>
+            </div>
+            <div>
+                <span class="hud-label">RÉCORD:</span> <span id="highScoreVal" style="color: #ffcc00;">0</span>
+            </div>
+        </div>
+
+        <div id="startScreen" class="overlay" onclick="startGame()">
+            <h2 style="color: #00fff2; font-size: 24px;">SISTEMA LISTO</h2>
+            <p class="blink" style="margin-top:20px;">[ HAZ CLICK PARA INICIAR ]</p>
+            <p style="font-size: 12px; margin-top: 50px; color: #666;">SONIDO ESTÉREO ACTIVADO</p>
+        </div>
+        
+        <div id="gameOverScreen" class="overlay">
             <h2 style="color: #ff2a2a; font-size: 40px; margin: 0; text-shadow: 0 0 20px red;">PARADOJA</h2>
             <p id="deathCause" style="color: #fff; opacity: 0.8; font-style: italic;">...</p>
             <p style="font-size: 20px; margin-top: 10px;">Puntuación: <span id="finalScore" style="color:#00fff2">0</span></p>
@@ -119,12 +148,107 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('scoreVal');
+    const highScoreEl = document.getElementById('highScoreVal');
     const finalScoreEl = document.getElementById('finalScore');
     const deathCauseEl = document.getElementById('deathCause');
     const gameOverScreen = document.getElementById('gameOverScreen');
+    const startScreen = document.getElementById('startScreen');
+
+    // --- AUDIO SYSTEM (Sintetizador Web Audio API) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    const sfx = {
+        shoot: () => {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        },
+        explode: () => {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(10, audioCtx.currentTime + 0.2);
+            
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        },
+        pickup: () => {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        },
+        dead: () => {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 1.0);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.0);
+        }
+    };
+
+    // --- Persistencia (High Score) ---
+    let highScore = localStorage.getItem('chronoHighScore') || 0;
+    highScoreEl.innerText = highScore;
+
+    function updateHighScore() {
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('chronoHighScore', highScore);
+            highScoreEl.innerText = highScore;
+        }
+    }
 
     // --- Configuración Global ---
     const TILE_SIZE = 24; 
+    let isGameRunning = false;
     let isGameOver = false;
     let score = 0;
     let frames = 0;
@@ -133,7 +257,7 @@
     let player = { 
         x: canvas.width/2, y: canvas.height/2, 
         speed: 4, 
-        color: '#00fff2', // Cyan neon
+        color: '#00fff2', 
         lastDir: {x: 1, y: 0} 
     };
     let velocity = { x: 0, y: 0 };
@@ -146,10 +270,8 @@
     let goal = { x: 0, y: 0, size: 12, active: false, pulse: 0 };
     let bullets = [];
     let enemies = [];
-    let particles = []; // Array para las explosiones
-    
-    // Balanceo
-    let enemySpawnRate = 120; // Empieza más lento
+    let particles = [];
+    let enemySpawnRate = 120;
 
     // --- Input ---
     const keys = {};
@@ -168,14 +290,13 @@
         );
     }
 
-    // --- Partículas (Efectos Visuales) ---
     function spawnParticles(x, y, color, amount, speedVar) {
         for(let i=0; i<amount; i++) {
             particles.push({
                 x: x, y: y,
                 vx: (Math.random() - 0.5) * speedVar,
                 vy: (Math.random() - 0.5) * speedVar,
-                life: 1.0, // Opacidad de 1 a 0
+                life: 1.0,
                 color: color,
                 size: Math.random() * 3 + 2
             });
@@ -187,7 +308,7 @@
             let p = particles[i];
             p.x += p.vx;
             p.y += p.vy;
-            p.life -= 0.03; // Se desvanecen
+            p.life -= 0.03;
             if(p.life <= 0) particles.splice(i, 1);
         }
     }
@@ -210,7 +331,6 @@
     function spawnEnemy() {
         let side = Math.floor(Math.random() * 4);
         let x, y;
-        // Spawnean un poco más lejos del borde para que no aparezcan de la nada
         const buffer = 30;
         switch(side) {
             case 0: x = -buffer; y = Math.random() * canvas.height; break; 
@@ -234,52 +354,46 @@
             vx: vx, vy: vy,
             size: 6,
             isEchoShot: isEchoShot,
-            // Las balas de eco son más oscuras para diferenciarlas
             color: isEchoShot ? '#5555ff' : '#ffffff' 
         });
+
+        // Solo suena si dispara el jugador o está cerca
+        if (!isEchoShot) sfx.shoot();
     }
 
     function createEcho() {
         echoes.push({
             recording: JSON.parse(JSON.stringify(currentRecording)),
             currentIndex: 0,
-            // Color varía ligeramente
             color: `hsl(${180 + Math.random()*40}, 100%, 70%)` 
         });
         currentRecording = [];
-        // Dificultad progresiva
         if(enemySpawnRate > 25) enemySpawnRate -= 8;
-        spawnParticles(player.x, player.y, '#00fff2', 15, 8); // Explosión azul al crear eco
+        spawnParticles(player.x, player.y, '#00fff2', 15, 8);
+        sfx.pickup();
     }
 
-    // --- Dibujo de Fondo (Grid) ---
     function drawGrid() {
-        ctx.strokeStyle = 'rgba(0, 255, 242, 0.08)'; // Grid muy sutil
+        ctx.strokeStyle = 'rgba(0, 255, 242, 0.08)';
         ctx.lineWidth = 1;
         const gridSize = 40;
-        
-        // Simular movimiento de cámara usando el módulo de la posición del jugador
         let offsetX = player.x % gridSize;
         let offsetY = player.y % gridSize;
-
         ctx.beginPath();
-        // Líneas verticales
         for(let x = -offsetX; x < canvas.width; x += gridSize) {
             ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
         }
-        // Líneas horizontales
         for(let y = -offsetY; y < canvas.height; y += gridSize) {
             ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
         }
         ctx.stroke();
     }
 
-    // --- Update Principal ---
     function update() {
-        if (isGameOver) return;
+        if (!isGameRunning || isGameOver) return;
         frames++;
 
-        // Movimiento Jugador
+        // Movimiento
         velocity.x = 0; velocity.y = 0;
         if (keys['ArrowUp'] || keys['w']) velocity.y = -player.speed;
         if (keys['ArrowDown'] || keys['s']) velocity.y = player.speed;
@@ -292,8 +406,6 @@
 
         player.x += velocity.x;
         player.y += velocity.y;
-        
-        // Clamp a pantalla
         player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, player.x));
         player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, player.y));
 
@@ -333,17 +445,15 @@
                 en.y += (dy/dist) * en.speed;
             }
 
-            // Zombie mata jugador
             if (checkCollision(player, en, TILE_SIZE, TILE_SIZE)) {
                 gameOver("Devorado por la horda.");
             }
 
-            // Bala mata Zombie
             for (let j = bullets.length - 1; j >= 0; j--) {
                 let b = bullets[j];
-                // Hitbox un poco más grande para facilitar acertar
                 if (checkCollision(en, b, TILE_SIZE, b.size + 4)) {
-                    spawnParticles(en.x + TILE_SIZE/2, en.y + TILE_SIZE/2, '#ff2a2a', 8, 5); // Sangre
+                    spawnParticles(en.x + TILE_SIZE/2, en.y + TILE_SIZE/2, '#ff2a2a', 8, 5); 
+                    sfx.explode(); // Sonido
                     enemies.splice(i, 1);
                     bullets.splice(j, 1);
                     break; 
@@ -351,9 +461,9 @@
             }
         }
 
-        // Meta (Orbe)
+        // Meta
         if (goal.active) {
-            goal.pulse += 0.1; // Animación simple
+            goal.pulse += 0.1;
             if (checkCollision(player, goal, TILE_SIZE, goal.size)) {
                 score++;
                 scoreEl.innerText = score;
@@ -376,7 +486,6 @@
             eco.currentIndex++;
             if (eco.currentIndex >= eco.recording.length) eco.currentIndex = 0;
 
-            // Colisión Jugador vs Eco (Buffer de seguridad de 60 frames/1 seg)
             if (eco.currentIndex > 60) {
                 if (checkCollision(player, frameData, TILE_SIZE, TILE_SIZE)) {
                      gameOver("Paradoja Temporal: Te tocaste a ti mismo.");
@@ -384,7 +493,7 @@
             }
         }
         
-        // Balas de Eco matan jugador
+        // Fuego Amigo
         for (let j = bullets.length - 1; j >= 0; j--) {
             let b = bullets[j];
             if (b.isEchoShot && checkCollision(player, b, TILE_SIZE, b.size)) {
@@ -396,23 +505,21 @@
         updateParticles();
     }
 
-    // --- Dibujo ---
     function drawSoldier(x, y, color, isGhost) {
         ctx.save();
         ctx.translate(x, y);
         if (isGhost) {
-            ctx.globalAlpha = 0.3; // Más transparente
+            ctx.globalAlpha = 0.3; 
             ctx.fillStyle = color;
-            ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE); // Eco es solo silueta cuadrada
+            ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
         } else {
-            // Jugador detallado
             ctx.fillStyle = color;
             ctx.shadowColor = color;
             ctx.shadowBlur = 10;
             ctx.fillRect(4, 8, 16, 16); 
-            ctx.fillStyle = '#fff'; // Casco blanco
+            ctx.fillStyle = '#fff'; 
             ctx.fillRect(6, 0, 12, 8);
-            ctx.fillStyle = '#000'; // Visor
+            ctx.fillStyle = '#000'; 
             ctx.fillRect(8, 3, 8, 2);
             ctx.shadowBlur = 0;
         }
@@ -422,10 +529,8 @@
     function drawZombie(x, y) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.fillStyle = '#ff2a2a'; // Rojo sangre
+        ctx.fillStyle = '#ff2a2a';
         ctx.fillRect(4, 6, 16, 18);
-        
-        // Ojos brillantes
         ctx.fillStyle = '#ffff00';
         ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 5;
@@ -436,13 +541,11 @@
     }
 
     function draw() {
-        // Limpiar
         ctx.fillStyle = '#0a0a10';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        drawGrid(); // Fondo técnico
+        drawGrid();
 
-        // Orbe
         if(goal.active) {
             let s = goal.size + Math.sin(goal.pulse)*2;
             ctx.fillStyle = '#fff';
@@ -454,66 +557,72 @@
             ctx.shadowBlur = 0;
         }
 
-        // Partículas
         drawParticles();
 
-        // Balas
         bullets.forEach(b => {
             ctx.fillStyle = b.color;
             ctx.fillRect(b.x, b.y, b.size, b.size);
         });
 
-        // Ecos
         echoes.forEach(eco => {
             let pos = eco.recording[eco.currentIndex];
             drawSoldier(pos.x, pos.y, eco.color, true);
         });
 
-        // Enemigos
         enemies.forEach(en => {
             drawZombie(en.x, en.y);
         });
 
-        // Jugador
-        drawSoldier(player.x, player.y, player.color, false);
+        if (isGameRunning && !isGameOver) {
+            drawSoldier(player.x, player.y, player.color, false);
+        }
     }
 
     function loop() {
         update();
         draw();
-        if (!isGameOver) requestAnimationFrame(loop);
+        requestAnimationFrame(loop);
+    }
+
+    function startGame() {
+        startScreen.style.display = 'none';
+        initAudio(); // Activa el audio
+        isGameRunning = true;
+        resetGameLogic();
     }
 
     function gameOver(cause) {
         if(isGameOver) return;
         isGameOver = true;
+        sfx.dead(); // Sonido de muerte
         deathCauseEl.innerText = cause;
         finalScoreEl.innerText = score;
+        updateHighScore(); // Guardar récord
         gameOverScreen.style.display = 'flex';
     }
 
     function resetGame() {
-        isGameOver = false;
         gameOverScreen.style.display = 'none';
+        resetGameLogic();
+    }
+
+    function resetGameLogic() {
+        isGameOver = false;
         score = 0;
         scoreEl.innerText = '0';
         frames = 0;
         enemySpawnRate = 120;
         particles = [];
-        
         player.x = canvas.width/2;
         player.y = canvas.height/2;
-        
         bullets = [];
         enemies = [];
         echoes = [];
         currentRecording = [];
-        
         spawnGoal();
-        loop();
     }
 
-    // Iniciar
+    // Loop inicial (dibujar fondo hasta click)
     spawnGoal();
     loop();
 
