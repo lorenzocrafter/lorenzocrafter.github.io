@@ -11,61 +11,72 @@
     <header class="navbar">
         <div class="container">
             <div class="logo">
-    <img src="Gemini_Generated_Image_bs5ccsbs5ccsbs5c (1).png" alt="B-BOX Logo" style="height: 80px; width: auto;">
-              </div>
+                <img src="Gemini_Generated_Image_bs5ccsbs5ccsbs5c (1).png" alt="B-BOX Logo">
+            </div>
             <nav class="nav-links">
-    <a href="#" class="active">Inicio</a>
-    <a href="#">Juegos</a>
-    <a href="#">Ranking</a>
-    <a href="#">Contacto</a>
-    </nav>
+                <a href="#" class="active">Inicio</a>
+                <a href="#juegos">Juegos</a> <a href="#" onclick="alert('Ranking próximamente!')">Ranking</a>
+                <a href="#" onclick="alert('Formulario de contacto en desarrollo')">Contacto</a>
+            </nav>
         </div>
     </header>
 
-    <section class="hero-section" style="background: linear-gradient(rgba(26,10,46,0.8), rgba(26,10,46,0.8)), url('fondo_circuito.jpg'); background-size: cover; background-position: center;">
+    <section class="hero-section">
         <div class="hero-content">
             <img src="Gemini_Generated_Image_bs5ccsbs5ccsbs5c (1).png" alt="B-BOX Play Games Banner">
         </div>
     </section>
 
-    <section class="main-content container">
+    <section id="juegos" class="main-content container">
+        
         <div class="category-buttons">
-    <button class="btn active">Todos</button>
-    <button class="btn">Acción</button>
-    <button class="btn">Puzzles</button>
-</div>
+            <button class="btn filter-btn active" data-filter="all">Todos</button>
+            <button class="btn filter-btn" data-filter="accion">Acción</button>
+            <button class="btn filter-btn" data-filter="puzzle">Puzzles</button>
+        </div>
 
-<div class="section-header">
-    <nav class="subsection-nav">
-        <a href="#" class="active">Populares</a>
-        <a href="#">Nuevos</a>
-        <a href="#">Clásicos</a>
-    </nav>
-    <div class="header-icons">
-        <span class="icon">&#9776;</span>
-        <span class="icon">&#9776;</span>
-        <span class="icon">&#8942;</span>
-    </div>
-   </div>
+        <div class="section-header">
+            <nav class="subsection-nav">
+                <a href="#" class="active">Populares</a>
+                <a href="#">Nuevos</a>
+            </nav>
+            <div class="header-icons">
+                <span class="icon">&#8862;</span> 
+                <span class="icon">&#8863;</span>
+            </div>
+        </div>
 
         <h2 class="section-title">Juegos Destacados</h2>
-       <div class="game-cards">
-            <div class="game-card" onclick="window.location.href='crossy_road.html'">
+        
+        <div class="game-cards">
+            
+            <div class="game-card" data-category="accion" onclick="window.location.href='crossy_road.html'">
                 <img src="portada_crossy_road.jpg" alt="Neon Crossy Road">
+                <div class="card-info">
+                    <h3>Crossy Road</h3>
+                    <span>Arcade</span>
+                </div>
             </div>
-           <div class="game-card" onclick="window.location.href='spell_caster.html'">
+            
+            <div class="game-card" data-category="puzzle" onclick="window.location.href='spell_caster.html'">
                 <img src="portada_spell_caster.jpg" alt="Spell Caster">
-             </div>
-            <div class="game-card" onclick="window.location.href='chrono_echo.html'">
-    <img src="portada_chrono.jpg" alt="Chrono Echo" style="width: 100%; height: 100%; object-fit: cover;">
-          </div>
-        </div>
-            <div class="game-card" onclick="seleccionarJuego('Puzzle Mágico')">
-                <img src="https://i.ibb.co/g3V8G0G/broet-pomnals-longos.png" alt="Game 3">
+                <div class="card-info">
+                    <h3>Spell Caster</h3>
+                    <span>Typing</span>
+                </div>
             </div>
-        </div>
+            
+            <div class="game-card" data-category="accion" onclick="window.location.href='chrono_echo.html'">
+                <img src="portada_chrono.jpg" alt="Chrono Echo">
+                <div class="card-info">
+                    <h3>Chrono-Echo</h3>
+                    <span>Shooter</span>
+                </div>
+            </div>
+
         </div>
     </section>
 
-</body><script src="script.js"></script>
+    <script src="script.js"></script>
+</body>
 </html>
