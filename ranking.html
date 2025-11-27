@@ -128,7 +128,7 @@
 
             <div class="my-stats">
                 <h3 style="margin-top:0; color:#fff; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:10px; position:relative; z-index:1;">
-                    Tus Récords Personales
+                    Tus Récords Personales (Local)
                 </h3>
                 
                 <div class="stat-row">
@@ -145,39 +145,21 @@
                 </div>
             </div>
 
-            <h3 style="color:#aaa; margin-bottom:15px;">Líderes de la Temporada</h3>
+            <h3 style="color:#aaa; margin-bottom:15px;">Top 10 Mundial (En Tiempo Real)</h3>
             <table class="score-board">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Jugador</th>
-                        <th>Juego Favorito</th>
+                        <th>Juego</th>
                         <th style="text-align: right;">Puntuación</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tabla-ranking-body">
                     <tr>
-                        <td class="player-rank">1</td>
-                        <td>CyberValak_01</td> <td>Chrono-Echo</td>
-                        <td class="player-score">99,999</td>
-                    </tr>
-                    <tr>
-                        <td class="player-rank">2</td>
-                        <td>LorenzoCrafter</td>
-                        <td>Spell Caster</td>
-                        <td class="player-score">88,250</td>
-                    </tr>
-                    <tr>
-                        <td class="player-rank">3</td>
-                        <td>PixelMaster</td>
-                        <td>Crossy Road</td>
-                        <td class="player-score">72,100</td>
-                    </tr>
-                    <tr>
-                        <td class="player-rank">4</td>
-                        <td>CodeWizard</td>
-                        <td>Spell Caster</td>
-                        <td class="player-score">65,800</td>
+                        <td colspan="4" style="text-align: center; padding: 30px; color: #888;">
+                            Conectando con el servidor... ☁️
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -186,7 +168,6 @@
     </div>
 
     <script>
-        // Cargar los puntajes guardados
         document.addEventListener('DOMContentLoaded', () => {
             const chronoBest = localStorage.getItem('chronoHighScore') || 0;
             document.getElementById('chrono-score').innerText = chronoBest;
