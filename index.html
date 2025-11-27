@@ -29,11 +29,13 @@
                     </button>
                     <div id="userInfo" style="display: none; align-items: center; gap: 10px;">
                         <img id="userPhoto" src="" alt="User" style="width: 35px; height: 35px; border-radius: 50%; border: 2px solid #00fff2; box-shadow: 0 0 10px #00fff2;">
-                        <div style="display: flex; flex-direction: column; line-height: 1;">
+                        
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
                             <span id="userName" style="color: #fff; font-weight: 600; font-size: 14px;"></span>
-                            <button id="editNameBtn" class="edit-name-btn">✎ Cambiar Alias</button>
+                            <button id="editNameBtn" class="edit-name-btn" style="padding: 0; font-size: 11px; margin-top: 2px;">✎ Cambiar Alias</button>
                         </div>
-                        <button id="logoutBtn" style="background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 4px 10px; border-radius: 6px; cursor: pointer;">✕</button>
+
+                        <button id="logoutBtn" style="background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 4px 10px; border-radius: 6px; cursor: pointer; margin-left: 10px;">✕</button>
                     </div>
                 </div>
             </nav>
@@ -146,8 +148,22 @@
         </div>
     </section>
 
+    <div id="aliasModal" class="modal-overlay">
+        <div class="modal-content" style="border: 1px solid #7000ff; box-shadow: 0 0 40px rgba(112, 0, 255, 0.4);">
+            <h3 style="color: #fff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px;">Nuevo Gamertag</h3>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 25px;">Escribe el nombre con el que aparecerás en el Ranking.</p>
+            
+            <input type="text" id="newAliasInput" class="search-input" style="text-align: center; margin-bottom: 25px; font-weight: bold; color: #00fff2; font-size: 18px;" placeholder="Ej: CyberWolf..." maxlength="12" autocomplete="off">
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="cancelAliasBtn" class="btn" style="background: rgba(255,255,255,0.05); border: 1px solid #555; color: #ccc; padding: 10px 20px; border-radius: 10px;">Cancelar</button>
+                <button id="saveAliasBtn" class="btn" style="background: linear-gradient(45deg, #7000ff, #a000ff); border: none; color: white; padding: 10px 25px; border-radius: 10px; font-weight: bold; box-shadow: 0 0 15px rgba(112,0,255,0.4);">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <footer style="text-align: center; padding: 40px; color: #444; font-size: 0.8rem; margin-top: 40px;">
-        &copy; 2025 B-BOX Games.
+        &copy; 2025 B-BOX Games. Creado con pasión.
     </footer>
 
     <script type="module" src="script.js"></script>
