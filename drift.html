@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voxel Chase | B-BOX Games</title>
+    <title>Escape City | B-BOX Games</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background: #111; user-select: none; -webkit-user-select: none; }
+        body { margin: 0; overflow: hidden; background: #111; user-select: none; }
         .navbar { position: absolute; top: 0; width: 100%; z-index: 100; }
         #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
@@ -17,32 +17,37 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        #score {
-            position: absolute; top: 100px; font-family: 'Poppins', sans-serif;
-            font-size: 40px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000;
+        #score-box {
+            position: absolute; top: 80px; 
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px;
+            border: 2px solid #fff; display: flex; gap: 20px;
         }
+        .hud-text { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 900; color: #fff; }
+        .hud-num { color: #ffcc00; }
 
         .msg-box {
-            background: rgba(0, 0, 0, 0.8); border: 2px solid #fff;
-            padding: 30px; border-radius: 15px; text-align: center;
-            pointer-events: auto; display: none;
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #ffcc00;
+            padding: 40px; border-radius: 15px; text-align: center;
+            pointer-events: auto; display: none; backdrop-filter: blur(5px);
         }
 
         button.play-btn {
             background: #ffcc00; border: none; padding: 15px 40px;
             font-size: 20px; font-weight: bold; cursor: pointer;
-            margin-top: 20px; border-radius: 5px; text-transform: uppercase;
+            margin-top: 20px; border-radius: 50px; text-transform: uppercase;
+            box-shadow: 0 0 20px #ffcc00; transition: transform 0.1s;
         }
+        button.play-btn:active { transform: scale(0.95); }
         
-        /* Zonas táctiles invisibles para móvil */
+        /* Controles Táctiles Invisibles */
         .touch-zone { position: absolute; top: 0; height: 100%; width: 50%; z-index: 150; }
         #left-zone { left: 0; }
         #right-zone { right: 0; }
         
-        .controls-hint {
-            position: absolute; bottom: 30px; color: rgba(255,255,255,0.6);
-            font-family: 'Poppins'; font-size: 14px; text-transform: uppercase;
-            width: 100%; text-align: center; pointer-events: none;
+        .bank-info {
+            position: absolute; bottom: 20px; right: 20px;
+            color: #00ff88; font-weight: bold; font-family: monospace; font-size: 20px;
+            text-shadow: 0 0 10px #00ff88;
         }
     </style>
 </head>
@@ -55,294 +60,351 @@
         </div>
     </header>
 
-    <div id="score">0</div>
+    <div id="score-box">
+        <div class="hud-text">TIEMPO: <span id="time" class="hud-num">0s</span></div>
+        <div class="hud-text">DINERO: <span id="money" class="hud-num">$0</span></div>
+    </div>
 
     <div id="left-zone" class="touch-zone"></div>
     <div id="right-zone" class="touch-zone"></div>
-
     <div id="game-container"></div>
 
     <div id="ui-layer">
         <div id="start-screen" class="msg-box" style="display: flex; flex-direction: column;">
-            <h1 style="color: #ffcc00; margin: 0;">VOXEL CHASE</h1>
-            <p style="color: #fff;">Escapa de la policía</p>
-            <button class="play-btn" onclick="startGame()">JUGAR</button>
+            <h1 style="color: #ffcc00; margin: 0 0 10px 0; font-size: 3em; text-shadow: 4px 4px 0 #000;">ESCAPE CITY</h1>
+            <p style="color: #fff;">Huye de la policía. Choca contra el dinero.</p>
+            <p style="color: #aaa; font-size: 12px;">(PC: Flechas | Móvil: Toca lados)</p>
+            <button class="play-btn" onclick="startGame()">INICIAR HUÍDA</button>
         </div>
         <div id="game-over-screen" class="msg-box">
-            <h1 style="color: #ff4757; margin: 0;">¡ATRAPADO!</h1>
-            <p style="color: #fff;">Puntos: <span id="final-score">0</span></p>
-            <button class="play-btn" onclick="resetGame()">REINTENTAR</button>
+            <h1 style="color: #ff4757; margin: 0; font-size: 3em;">¡ARRESTADO!</h1>
+            <p style="color: #fff; font-size: 1.5em;">Botín: <span id="final-score" style="color:#00ff88">$0</span></p>
+            <button class="play-btn" onclick="resetGame()">INTENTAR DE NUEVO</button>
         </div>
-        <div class="controls-hint">← Toca Izquierda | Toca Derecha →</div>
     </div>
 
     <script type="module">
         import * as THREE from "https://esm.sh/three";
 
-        // CONFIGURACIÓN
+        // --- CONFIGURACIÓN ---
         let scene, camera, renderer;
-        let player, police = [], obstacles = [];
+        let player, police = [], buildings = [], items = [];
         let isRunning = false;
-        let score = 0;
-        let speed = 0.6;
-        const turnSpeed = 0.08;
+        let money = 0;
+        let time = 0;
+        let startTime;
+        
+        // Físicas Arcade
+        const playerSpeed = 0.8;
+        const turnSpeed = 0.07;
+        const policeSpeed = 0.72; // Ligeramente más lentos que el jugador
+        const mapSize = 400;
         let inputs = { left: false, right: false };
-        let frameCount = 0;
 
-        // ELEMENTOS DOM
-        const scoreEl = document.getElementById('score');
+        // DOM Elements
+        const timeEl = document.getElementById('time');
+        const moneyEl = document.getElementById('money');
+        const finalScoreEl = document.getElementById('final-score');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
-        const finalScoreEl = document.getElementById('final-score');
 
-        // INICIALIZACIÓN
         function init() {
+            // Escena
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x222222);
-            scene.fog = new THREE.Fog(0x222222, 50, 150);
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = new THREE.Fog(0x1a1a2e, 40, 90);
 
-            // Cámara Isométrica
-            const aspect = window.innerWidth / window.innerHeight;
-            const d = 40;
-            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-            camera.position.set(20, 20, 20);
-            camera.lookAt(scene.position);
+            // Cámara
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 30, 20);
+            camera.lookAt(0, 0, 0);
 
             // Luces
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(10, 20, 10);
+            const dirLight = new THREE.DirectionalLight(0xffcc00, 0.8); // Sol atardecer
+            dirLight.position.set(50, 100, 50);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
             scene.add(dirLight);
 
-            // Suelo Infinito (Simulado)
-            const geometry = new THREE.PlaneGeometry(500, 500);
-            const material = new THREE.MeshPhongMaterial({ color: 0x333333, depthWrite: false });
-            const ground = new THREE.Mesh(geometry, material);
+            // Suelo (Ciudad)
+            const groundGeo = new THREE.PlaneGeometry(mapSize * 2, mapSize * 2);
+            const groundMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
-            ground.position.y = -1;
+            ground.receiveShadow = true;
             scene.add(ground);
-            
-            // Grid helper para sensación de velocidad
-            const gridHelper = new THREE.GridHelper(500, 50, 0x444444, 0x444444);
-            scene.add(gridHelper);
 
+            // Generar Ciudad
+            generateCity();
+
+            // Renderizador
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
             document.getElementById('game-container').appendChild(renderer.domElement);
 
-            // Eventos Resize
-            window.addEventListener('resize', onWindowResize, false);
-            
-            // Input Listeners
-            setupInputs();
+            // Eventos
+            window.addEventListener('resize', onResize);
+            setupControls();
         }
 
-        function createCar(color) {
+        // --- OBJETOS DEL JUEGO ---
+
+        function createCar(color, isPolice = false) {
             const carGroup = new THREE.Group();
 
             // Chasis
-            const bodyGeo = new THREE.BoxGeometry(2, 1, 4);
             const bodyMat = new THREE.MeshPhongMaterial({ color: color });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4), bodyMat);
             body.position.y = 0.5;
+            body.castShadow = true;
             carGroup.add(body);
 
-            // Techo
-            const roofGeo = new THREE.BoxGeometry(1.8, 0.8, 2);
-            const roofMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
-            const roof = new THREE.Mesh(roofGeo, roofMat);
-            roof.position.y = 1.2;
+            // Techo / Ventanas
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 2), new THREE.MeshPhongMaterial({ color: 0x111 }));
+            roof.position.y = 1.3;
+            roof.position.z = -0.2;
             carGroup.add(roof);
 
             // Ruedas
-            const wheelGeo = new THREE.BoxGeometry(0.4, 0.8, 0.8);
+            const wheelGeo = new THREE.BoxGeometry(2.1, 0.8, 0.8);
             const wheelMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
-            
-            const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(-1.1, 0.4, 1.2);
-            const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.position.set(1.1, 0.4, 1.2);
-            const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.position.set(-1.1, 0.4, -1.2);
-            const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.position.set(1.1, 0.4, -1.2);
-            
-            carGroup.add(w1, w2, w3, w4);
+            const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(0, 0.4, 1.2);
+            const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.position.set(0, 0.4, -1.2);
+            carGroup.add(w1, w2);
+
+            // Luces y Sirenas
+            if(isPolice) {
+                const siren = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 0.4), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                siren.position.set(0, 1.7, -0.2);
+                carGroup.add(siren);
+                carGroup.userData = { type: 'police', siren: siren };
+            } else {
+                // Luces traseras jugador (Estilo Neon)
+                const tailLight = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                tailLight.position.set(0, 0.5, 2.01);
+                carGroup.add(tailLight);
+            }
 
             return carGroup;
         }
 
-        function createPolice() {
-            const cop = createCar(0xffffff); // Blanco
-            // Sirena
-            const sirenGeo = new THREE.BoxGeometry(1.5, 0.2, 0.5);
-            const sirenMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Rojo/Azul
-            const siren = new THREE.Mesh(sirenGeo, sirenMat);
-            siren.position.y = 1.7;
-            cop.add(siren);
+        function createBuilding(x, z) {
+            const height = Math.random() * 10 + 5;
+            const geo = new THREE.BoxGeometry(4, height, 4);
+            const mat = new THREE.MeshLambertMaterial({ color: 0x333344 });
+            const building = new THREE.Mesh(geo, mat);
+            building.position.set(x, height / 2, z);
+            building.castShadow = true;
+            building.receiveShadow = true;
             
-            // Posición aleatoria lejos
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 60;
-            cop.position.x = player.position.x + Math.cos(angle) * dist;
-            cop.position.z = player.position.z + Math.sin(angle) * dist;
-            
-            cop.userData = { type: 'police', speed: speed * 1.05 }; // Un poco más rápido
-            scene.add(cop);
-            police.push(cop);
+            // Ventanas neón
+            const winGeo = new THREE.BoxGeometry(4.1, height * 0.8, 4.1);
+            const winMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true, opacity: 0.2 });
+            const wins = new THREE.Mesh(winGeo, winMat);
+            building.add(wins);
+
+            scene.add(building);
+            buildings.push(building); // Para colisiones
         }
 
-        function createObstacle() {
-            // Árboles o Rocas simples
-            const geo = new THREE.BoxGeometry(2, Math.random() * 3 + 2, 2);
-            const mat = new THREE.MeshLambertMaterial({ color: 0x4caf50 }); // Verde
-            const obs = new THREE.Mesh(geo, mat);
-            
-            // Spawn frente al jugador
-            const angle = player.rotation.y + (Math.random() - 0.5); 
-            const dist = 80;
-            obs.position.x = player.position.x + Math.sin(angle) * dist;
-            obs.position.z = player.position.z + Math.cos(angle) * dist;
-            obs.position.y = 1;
-            
-            obs.userData = { type: 'obstacle' };
-            scene.add(obs);
-            obstacles.push(obs);
+        function createMoney(x, z) {
+            const geo = new THREE.DodecahedronGeometry(1);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+            const item = new THREE.Mesh(geo, mat);
+            item.position.set(x, 1, z);
+            scene.add(item);
+            items.push(item);
         }
 
-        function setupInputs() {
-            // Teclado
-            document.addEventListener('keydown', (e) => {
+        function generateCity() {
+            // Generar cuadrícula de edificios
+            const blockSize = 15;
+            for(let x = -100; x <= 100; x += blockSize) {
+                for(let z = -100; z <= 100; z += blockSize) {
+                    // Dejar el centro vacío para empezar
+                    if(Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+
+                    // 80% de probabilidad de edificio, 20% hueco
+                    if(Math.random() > 0.2) {
+                        createBuilding(x, z);
+                    } else if(Math.random() > 0.5) {
+                        createMoney(x, z); // Poner dinero en los huecos
+                    }
+                }
+            }
+        }
+
+        // --- LÓGICA DEL JUEGO ---
+
+        function setupControls() {
+            document.addEventListener('keydown', e => {
                 if(e.key === 'ArrowLeft' || e.key === 'a') inputs.left = true;
                 if(e.key === 'ArrowRight' || e.key === 'd') inputs.right = true;
             });
-            document.addEventListener('keyup', (e) => {
+            document.addEventListener('keyup', e => {
                 if(e.key === 'ArrowLeft' || e.key === 'a') inputs.left = false;
                 if(e.key === 'ArrowRight' || e.key === 'd') inputs.right = false;
             });
 
-            // Táctil (Zonas invisibles)
+            // Táctil
             const lZone = document.getElementById('left-zone');
             const rZone = document.getElementById('right-zone');
+            lZone.addEventListener('touchstart', e => { e.preventDefault(); inputs.left = true; });
+            lZone.addEventListener('touchend', e => { e.preventDefault(); inputs.left = false; });
+            rZone.addEventListener('touchstart', e => { e.preventDefault(); inputs.right = true; });
+            rZone.addEventListener('touchend', e => { e.preventDefault(); inputs.right = false; });
+        }
 
-            lZone.addEventListener('touchstart', (e) => { e.preventDefault(); inputs.left = true; });
-            lZone.addEventListener('touchend', (e) => { e.preventDefault(); inputs.left = false; });
+        function spawnPolice() {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 60;
+            const px = player.position.x + Math.cos(angle) * dist;
+            const pz = player.position.z + Math.sin(angle) * dist;
             
-            rZone.addEventListener('touchstart', (e) => { e.preventDefault(); inputs.right = true; });
-            rZone.addEventListener('touchend', (e) => { e.preventDefault(); inputs.right = false; });
+            const cop = createCar(0xffffff, true); // Blanco
+            cop.position.set(px, 0, pz);
+            cop.lookAt(player.position);
+            scene.add(cop);
+            police.push(cop);
         }
 
         function update() {
-            if (!isRunning) return;
+            if(!isRunning) return;
 
-            // 1. Movimiento Jugador
-            if (inputs.left) player.rotation.y += turnSpeed;
-            if (inputs.right) player.rotation.y -= turnSpeed;
+            // 1. MOVER JUGADOR
+            if(inputs.left) player.rotation.y += turnSpeed;
+            if(inputs.right) player.rotation.y -= turnSpeed;
+            player.translateZ(playerSpeed);
 
-            player.translateZ(speed);
+            // Efecto de inclinación al girar
+            const targetTilt = (inputs.left ? 0.3 : (inputs.right ? -0.3 : 0));
+            player.rotation.z += (targetTilt - player.rotation.z) * 0.1;
 
-            // Cámara sigue al jugador (suavizada)
-            camera.position.x = player.position.x + 20;
-            camera.position.z = player.position.z + 20;
+            // 2. MOVER CÁMARA (Suavizado)
+            const targetCamPos = new THREE.Vector3(
+                player.position.x - Math.sin(player.rotation.y) * 20,
+                25, 
+                player.position.z - Math.cos(player.rotation.y) * 20
+            );
+            camera.position.lerp(targetCamPos, 0.1);
             camera.lookAt(player.position);
 
-            // 2. Policía (IA Simple)
+            // 3. IA POLICIAL
             police.forEach((cop, index) => {
                 cop.lookAt(player.position);
-                cop.translateZ(cop.userData.speed);
+                cop.translateZ(policeSpeed);
+                
+                // Sirena parpadeante
+                if(Date.now() % 500 < 250) cop.userData.siren.material.color.setHex(0xff0000);
+                else cop.userData.siren.material.color.setHex(0x0000ff);
 
                 // Colisión con jugador
-                if (cop.position.distanceTo(player.position) < 3) {
-                    gameOver();
-                }
+                if(cop.position.distanceTo(player.position) < 3) gameOver();
 
-                // Choque entre policías (Explosión)
-                for (let j = index + 1; j < police.length; j++) {
-                    if (cop.position.distanceTo(police[j].position) < 2.5) {
-                        // Eliminar ambos
-                        scene.remove(cop);
-                        scene.remove(police[j]);
-                        police.splice(j, 1);
-                        police.splice(index, 1);
-                        score += 10;
-                        scoreEl.innerText = score;
+                // Colisión entre policías (se eliminan)
+                for(let j = index + 1; j < police.length; j++) {
+                    if(cop.position.distanceTo(police[j].position) < 3) {
+                        scene.remove(cop); scene.remove(police[j]);
+                        police.splice(j, 1); police.splice(index, 1);
+                        money += 50; // Bonus por choque policial
                         return;
                     }
                 }
             });
 
-            // 3. Spawns
-            frameCount++;
-            if (frameCount % 60 === 0) { // Puntos por tiempo
-                score++;
-                scoreEl.innerText = score;
-            }
-            if (frameCount % 150 === 0) createPolice();
-            if (frameCount % 30 === 0) createObstacle();
+            // 4. COLISIONES CON EDIFICIOS (Rebote simple)
+            const playerBox = new THREE.Box3().setFromObject(player);
+            // Reducimos un poco la caja para perdonar roces
+            playerBox.expandByScalar(-0.5); 
 
-            // 4. Limpieza (Obstáculos lejanos)
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                if (obstacles[i].position.distanceTo(player.position) > 100) {
-                    scene.remove(obstacles[i]);
-                    obstacles.splice(i, 1);
-                } else if (obstacles[i].position.distanceTo(player.position) < 2) {
-                    gameOver(); // Chocar con árbol
+            for(let b of buildings) {
+                const bBox = new THREE.Box3().setFromObject(b);
+                if(playerBox.intersectsBox(bBox)) {
+                    // Rebote: invertir dirección y perder velocidad
+                    player.translateZ(-2);
+                    // Efecto de choque (pantalla roja brevemente? opcional)
                 }
             }
+
+            // 5. RECOGER DINERO
+            for(let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.rotation.y += 0.05; // Girar moneda
+                if(player.position.distanceTo(item.position) < 3) {
+                    scene.remove(item);
+                    items.splice(i, 1);
+                    money += 100;
+                    moneyEl.innerText = `$${money}`;
+                }
+            }
+
+            // Actualizar Tiempo
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            timeEl.innerText = `${elapsed}s`;
+
+            // Spawners
+            if(Math.random() < 0.01) spawnPolice(); // 1% probabilidad por frame
         }
 
-        function render() {
-            requestAnimationFrame(render);
+        function animate() {
+            requestAnimationFrame(animate);
             update();
             renderer.render(scene, camera);
         }
 
-        function onWindowResize() {
-            const aspect = window.innerWidth / window.innerHeight;
-            const d = 40;
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // CONTROL DEL JUEGO
+        // GESTIÓN ESTADOS
         window.startGame = function() {
             startScreen.style.display = 'none';
-            
-            // Resetear escena
             if(player) scene.remove(player);
             police.forEach(p => scene.remove(p));
-            obstacles.forEach(o => scene.remove(o));
             police = [];
-            obstacles = [];
-
-            // Crear Jugador
-            player = createCar(0xffff00); // Amarillo (Neon)
-            scene.add(player);
-            player.position.set(0, 0, 0);
             
-            score = 0;
-            scoreEl.innerText = 0;
-            frameCount = 0;
+            // Reiniciar jugador
+            player = createCar(0xffff00); // Amarillo Neón
+            scene.add(player);
+            player.position.set(0, 0.5, 0);
+            
+            // Limpiar zona inicial de edificios
+            buildings.forEach(b => {
+                if(b.position.distanceTo(new THREE.Vector3(0,0,0)) < 20) {
+                    scene.remove(b);
+                    // Sacarlo del array es complejo aquí, simplemente lo ocultamos en la lógica visual
+                    b.position.y = -100; 
+                }
+            });
+
+            money = 0;
+            startTime = Date.now();
+            moneyEl.innerText = "$0";
             isRunning = true;
         };
+
+        function gameOver() {
+            isRunning = false;
+            gameOverScreen.style.display = 'block';
+            finalScoreEl.innerText = `$${money}`;
+            
+            // Guardar en Firebase
+            if(window.guardarPuntaje) window.guardarPuntaje("Escape City", money);
+        }
 
         window.resetGame = function() {
             gameOverScreen.style.display = 'none';
             startGame();
         };
 
-        function gameOver() {
-            isRunning = false;
-            gameOverScreen.style.display = 'block';
-            finalScoreEl.innerText = score;
-            
-            // Guardar en Firebase
-            if(window.guardarPuntaje) window.guardarPuntaje("Voxel Chase", score);
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
         init();
-        render();
+        animate();
 
     </script>
 
