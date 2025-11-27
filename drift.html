@@ -3,93 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Chase | B-BOX Games</title>
+    <title>Voxel Chase | B-BOX Games</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            background-color: #050505;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: none;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .navbar { flex-shrink: 0; }
-
-        #game-wrapper {
-            flex-grow: 1;
-            position: relative;
-            background: #111;
-            overflow: hidden;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
+        body { margin: 0; overflow: hidden; background: #111; user-select: none; -webkit-user-select: none; }
+        .navbar { position: absolute; top: 0; width: 100%; z-index: 100; }
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
         #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 200;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        #score-display {
-            position: absolute;
-            top: 20px;
-            font-size: 40px;
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 2px 2px 0 #000;
-            z-index: 20;
+        #score {
+            position: absolute; top: 100px; font-family: 'Poppins', sans-serif;
+            font-size: 40px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000;
         }
 
         .msg-box {
-            background: rgba(10, 5, 20, 0.95);
-            padding: 30px;
-            border-radius: 20px;
-            border: 2px solid #00fff2;
-            text-align: center;
-            box-shadow: 0 0 40px rgba(0, 255, 242, 0.3);
-            pointer-events: auto;
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.8); border: 2px solid #fff;
+            padding: 30px; border-radius: 15px; text-align: center;
+            pointer-events: auto; display: none;
         }
-
-        h2 { color: #00fff2; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; }
-        p { color: #aaa; margin: 0 0 20px 0; }
 
         button.play-btn {
-            background: linear-gradient(45deg, #00fff2, #0088ff);
-            border: none;
-            padding: 12px 30px;
-            color: #000;
-            font-weight: bold;
-            font-size: 18px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            box-shadow: 0 0 15px rgba(0, 255, 242, 0.5);
+            background: #ffcc00; border: none; padding: 15px 40px;
+            font-size: 20px; font-weight: bold; cursor: pointer;
+            margin-top: 20px; border-radius: 5px; text-transform: uppercase;
         }
-        button.play-btn:hover { transform: scale(1.05); }
-
-        /* CONTROLES MÓVILES (Joystick Invisible) */
-        #touch-zone {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5;
-        }
+        
+        /* Zonas táctiles invisibles para móvil */
+        .touch-zone { position: absolute; top: 0; height: 100%; width: 50%; z-index: 150; }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
+        
         .controls-hint {
-            position: absolute; bottom: 20px; color: rgba(255,255,255,0.5); font-size: 12px;
+            position: absolute; bottom: 30px; color: rgba(255,255,255,0.6);
+            font-family: 'Poppins'; font-size: 14px; text-transform: uppercase;
+            width: 100%; text-align: center; pointer-events: none;
         }
     </style>
 </head>
@@ -97,327 +50,299 @@
 
     <header class="navbar">
         <div class="container">
-            <div class="logo">
-                <a href="index.html" class="logo-text">B-BOX <span>GAMES</span></a>
-            </div>
-            <nav class="nav-links">
-                <a href="index.html">Volver</a>
-                <div id="user-area" style="display: inline-block; margin-left: 20px;">
-                    <div id="userInfo" style="display: none; align-items: center; gap: 10px;">
-                        <img id="userPhoto" src="" alt="User" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #00fff2;">
-                        <span id="userName" style="color: #fff; font-weight: 600;"></span>
-                    </div>
-                </div>
-            </nav>
+            <div class="logo"><a href="index.html" class="logo-text">B-BOX <span>GAMES</span></a></div>
+            <nav class="nav-links"><a href="index.html">Volver</a></nav>
         </div>
     </header>
 
-    <div id="game-wrapper">
-        <div id="score-display">0</div>
-        <canvas id="gameCanvas"></canvas>
-        <div id="touch-zone"></div>
-        
-        <div id="ui-layer">
-            <div id="start-screen" class="msg-box">
-                <h2>Neon Chase</h2>
-                <p>Escapa de la policía. <br>Usa FLECHAS o TOCA los lados.</p>
-                <button class="play-btn" onclick="startGame()">CONDUCIR</button>
-            </div>
-            
-            <div id="game-over-screen" class="msg-box" style="display: none;">
-                <h2 style="color: #ff4757;">ARRESTADO</h2>
-                <p>Tiempo: <span id="final-score" style="color: #fff; font-weight: bold;">0</span> seg</p>
-                <button class="play-btn" style="background: #ff4757; color: white;" onclick="resetGame()">HUIR OTRA VEZ</button>
-            </div>
-            
-            <div class="controls-hint" id="pc-hint">← Izquierda | Derecha →</div>
+    <div id="score">0</div>
+
+    <div id="left-zone" class="touch-zone"></div>
+    <div id="right-zone" class="touch-zone"></div>
+
+    <div id="game-container"></div>
+
+    <div id="ui-layer">
+        <div id="start-screen" class="msg-box" style="display: flex; flex-direction: column;">
+            <h1 style="color: #ffcc00; margin: 0;">VOXEL CHASE</h1>
+            <p style="color: #fff;">Escapa de la policía</p>
+            <button class="play-btn" onclick="startGame()">JUGAR</button>
         </div>
+        <div id="game-over-screen" class="msg-box">
+            <h1 style="color: #ff4757; margin: 0;">¡ATRAPADO!</h1>
+            <p style="color: #fff;">Puntos: <span id="final-score">0</span></p>
+            <button class="play-btn" onclick="resetGame()">REINTENTAR</button>
+        </div>
+        <div class="controls-hint">← Toca Izquierda | Toca Derecha →</div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score-display');
+    <script type="module">
+        import * as THREE from "https://esm.sh/three";
+
+        // CONFIGURACIÓN
+        let scene, camera, renderer;
+        let player, police = [], obstacles = [];
+        let isRunning = false;
+        let score = 0;
+        let speed = 0.6;
+        const turnSpeed = 0.08;
+        let inputs = { left: false, right: false };
+        let frameCount = 0;
+
+        // ELEMENTOS DOM
+        const scoreEl = document.getElementById('score');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
         const finalScoreEl = document.getElementById('final-score');
 
-        let isRunning = false;
-        let isGameOver = false;
-        let score = 0;
-        let frames = 0;
-        
-        // Configuración de Pantalla
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight - 70; // Restar navbar
+        // INICIALIZACIÓN
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x222222);
+            scene.fog = new THREE.Fog(0x222222, 50, 150);
+
+            // Cámara Isométrica
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 40;
+            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+            camera.position.set(20, 20, 20);
+            camera.lookAt(scene.position);
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Suelo Infinito (Simulado)
+            const geometry = new THREE.PlaneGeometry(500, 500);
+            const material = new THREE.MeshPhongMaterial({ color: 0x333333, depthWrite: false });
+            const ground = new THREE.Mesh(geometry, material);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -1;
+            scene.add(ground);
+            
+            // Grid helper para sensación de velocidad
+            const gridHelper = new THREE.GridHelper(500, 50, 0x444444, 0x444444);
+            scene.add(gridHelper);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            // Eventos Resize
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // Input Listeners
+            setupInputs();
         }
-        window.addEventListener('resize', resize);
-        resize();
 
-        // JUGADOR (El Coche)
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            angle: 0,
-            speed: 0,
-            maxSpeed: 6,
-            acceleration: 0.2,
-            turnSpeed: 0.08,
-            friction: 0.96,
-            width: 20,
-            height: 34,
-            color: '#00fff2',
-            trail: []
-        };
+        function createCar(color) {
+            const carGroup = new THREE.Group();
 
-        const police = [];
-        const policeSpeed = 3.5;
+            // Chasis
+            const bodyGeo = new THREE.BoxGeometry(2, 1, 4);
+            const bodyMat = new THREE.MeshPhongMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.5;
+            carGroup.add(body);
 
-        // INPUTS
-        const keys = { left: false, right: false };
+            // Techo
+            const roofGeo = new THREE.BoxGeometry(1.8, 0.8, 2);
+            const roofMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 1.2;
+            carGroup.add(roof);
 
-        // Teclado
-        document.addEventListener('keydown', (e) => {
-            if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-            if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-        });
-        document.addEventListener('keyup', (e) => {
-            if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-            if(e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-        });
+            // Ruedas
+            const wheelGeo = new THREE.BoxGeometry(0.4, 0.8, 0.8);
+            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            
+            const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(-1.1, 0.4, 1.2);
+            const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.position.set(1.1, 0.4, 1.2);
+            const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.position.set(-1.1, 0.4, -1.2);
+            const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.position.set(1.1, 0.4, -1.2);
+            
+            carGroup.add(w1, w2, w3, w4);
 
-        // Táctil (Izquierda / Derecha de la pantalla)
-        const touchZone = document.getElementById('touch-zone');
-        touchZone.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touchX = e.touches[0].clientX;
-            if (touchX < window.innerWidth / 2) {
-                keys.left = true; keys.right = false;
-            } else {
-                keys.right = true; keys.left = false;
-            }
-        });
-        touchZone.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            keys.left = false; keys.right = false;
-        });
+            return carGroup;
+        }
 
-        // --- LÓGICA DEL JUEGO ---
+        function createPolice() {
+            const cop = createCar(0xffffff); // Blanco
+            // Sirena
+            const sirenGeo = new THREE.BoxGeometry(1.5, 0.2, 0.5);
+            const sirenMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Rojo/Azul
+            const siren = new THREE.Mesh(sirenGeo, sirenMat);
+            siren.position.y = 1.7;
+            cop.add(siren);
+            
+            // Posición aleatoria lejos
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 60;
+            cop.position.x = player.position.x + Math.cos(angle) * dist;
+            cop.position.z = player.position.z + Math.sin(angle) * dist;
+            
+            cop.userData = { type: 'police', speed: speed * 1.05 }; // Un poco más rápido
+            scene.add(cop);
+            police.push(cop);
+        }
+
+        function createObstacle() {
+            // Árboles o Rocas simples
+            const geo = new THREE.BoxGeometry(2, Math.random() * 3 + 2, 2);
+            const mat = new THREE.MeshLambertMaterial({ color: 0x4caf50 }); // Verde
+            const obs = new THREE.Mesh(geo, mat);
+            
+            // Spawn frente al jugador
+            const angle = player.rotation.y + (Math.random() - 0.5); 
+            const dist = 80;
+            obs.position.x = player.position.x + Math.sin(angle) * dist;
+            obs.position.z = player.position.z + Math.cos(angle) * dist;
+            obs.position.y = 1;
+            
+            obs.userData = { type: 'obstacle' };
+            scene.add(obs);
+            obstacles.push(obs);
+        }
+
+        function setupInputs() {
+            // Teclado
+            document.addEventListener('keydown', (e) => {
+                if(e.key === 'ArrowLeft' || e.key === 'a') inputs.left = true;
+                if(e.key === 'ArrowRight' || e.key === 'd') inputs.right = true;
+            });
+            document.addEventListener('keyup', (e) => {
+                if(e.key === 'ArrowLeft' || e.key === 'a') inputs.left = false;
+                if(e.key === 'ArrowRight' || e.key === 'd') inputs.right = false;
+            });
+
+            // Táctil (Zonas invisibles)
+            const lZone = document.getElementById('left-zone');
+            const rZone = document.getElementById('right-zone');
+
+            lZone.addEventListener('touchstart', (e) => { e.preventDefault(); inputs.left = true; });
+            lZone.addEventListener('touchend', (e) => { e.preventDefault(); inputs.left = false; });
+            
+            rZone.addEventListener('touchstart', (e) => { e.preventDefault(); inputs.right = true; });
+            rZone.addEventListener('touchend', (e) => { e.preventDefault(); inputs.right = false; });
+        }
 
         function update() {
             if (!isRunning) return;
 
-            // 1. Físicas del Jugador
-            if (keys.left) player.angle -= player.turnSpeed;
-            if (keys.right) player.angle += player.turnSpeed;
+            // 1. Movimiento Jugador
+            if (inputs.left) player.rotation.y += turnSpeed;
+            if (inputs.right) player.rotation.y -= turnSpeed;
 
-            // Aceleración automática constante (como Escape Road)
-            if (player.speed < player.maxSpeed) player.speed += player.acceleration;
-            
-            // Movimiento basado en ángulo (Derrape simple)
-            player.x += Math.cos(player.angle) * player.speed;
-            player.y += Math.sin(player.angle) * player.speed;
+            player.translateZ(speed);
 
-            // Límites (Rebotar en bordes)
-            if (player.x < 0 || player.x > canvas.width) {
-                player.angle = Math.PI - player.angle;
-                player.x = Math.max(0, Math.min(canvas.width, player.x));
-            }
-            if (player.y < 0 || player.y > canvas.height) {
-                player.angle = -player.angle;
-                player.y = Math.max(0, Math.min(canvas.height, player.y));
-            }
+            // Cámara sigue al jugador (suavizada)
+            camera.position.x = player.position.x + 20;
+            camera.position.z = player.position.z + 20;
+            camera.lookAt(player.position);
 
-            // Rastro de derrape
-            if (frames % 3 === 0) {
-                player.trail.push({ x: player.x, y: player.y, alpha: 1 });
-                if (player.trail.length > 20) player.trail.shift();
-            }
+            // 2. Policía (IA Simple)
+            police.forEach((cop, index) => {
+                cop.lookAt(player.position);
+                cop.translateZ(cop.userData.speed);
 
-            // 2. Enemigos (Policía)
-            // Spawnear cada 2 segundos aprox
-            if (frames % 120 === 0) {
-                spawnPolice();
-            }
-
-            for (let i = 0; i < police.length; i++) {
-                let cop = police[i];
-                
-                // IA: Perseguir jugador
-                let dx = player.x - cop.x;
-                let dy = player.y - cop.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                let angleToPlayer = Math.atan2(dy, dx);
-
-                cop.x += Math.cos(angleToPlayer) * policeSpeed;
-                cop.y += Math.sin(angleToPlayer) * policeSpeed;
-                cop.angle = angleToPlayer;
-
-                // Colisión Jugador vs Policía
-                if (dist < 25) { // Radio de colisión simple
+                // Colisión con jugador
+                if (cop.position.distanceTo(player.position) < 3) {
                     gameOver();
                 }
 
-                // Colisión Policía vs Policía (Choque)
-                for (let j = i + 1; j < police.length; j++) {
-                    let otherCop = police[j];
-                    let dxg = cop.x - otherCop.x;
-                    let dyg = cop.y - otherCop.y;
-                    let distg = Math.sqrt(dxg*dxg + dyg*dyg);
-                    
-                    if (distg < 25) {
-                        // Explotan ambos
-                        createExplosion((cop.x + otherCop.x)/2, (cop.y + otherCop.y)/2);
+                // Choque entre policías (Explosión)
+                for (let j = index + 1; j < police.length; j++) {
+                    if (cop.position.distanceTo(police[j].position) < 2.5) {
+                        // Eliminar ambos
+                        scene.remove(cop);
+                        scene.remove(police[j]);
                         police.splice(j, 1);
-                        police.splice(i, 1);
-                        score += 5; // Puntos extra por hacer que choquen
+                        police.splice(index, 1);
+                        score += 10;
                         scoreEl.innerText = score;
-                        i--; // Ajustar índice
-                        break;
+                        return;
                     }
                 }
-            }
+            });
 
-            // Puntuación por tiempo (sobrevivir)
-            if (frames % 60 === 0) {
+            // 3. Spawns
+            frameCount++;
+            if (frameCount % 60 === 0) { // Puntos por tiempo
                 score++;
                 scoreEl.innerText = score;
             }
+            if (frameCount % 150 === 0) createPolice();
+            if (frameCount % 30 === 0) createObstacle();
 
-            frames++;
-        }
-
-        let particles = [];
-        function createExplosion(x, y) {
-            for(let i=0; i<10; i++) {
-                particles.push({
-                    x: x, y: y,
-                    vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
-                    life: 1.0, color: '#ff4757'
-                });
-            }
-        }
-
-        function draw() {
-            // Fondo con rastro suave
-            ctx.fillStyle = 'rgba(10, 10, 16, 0.3)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Rejilla de suelo
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-            ctx.lineWidth = 1;
-            let gridSize = 50;
-            // Efecto de movimiento en la rejilla (opcional, aquí estática para rendimiento)
-            for(let x=0; x<canvas.width; x+=gridSize) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
-            for(let y=0; y<canvas.height; y+=gridSize) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-
-            // Dibujar Rastro Jugador
-            player.trail.forEach(t => {
-                t.alpha -= 0.05;
-                ctx.fillStyle = `rgba(0, 255, 242, ${t.alpha})`;
-                ctx.fillRect(t.x-5, t.y-5, 10, 10);
-            });
-
-            // Dibujar Jugador
-            drawCar(player.x, player.y, player.angle, player.color);
-
-            // Dibujar Policías
-            police.forEach(cop => {
-                drawCar(cop.x, cop.y, cop.angle, '#ff4757');
-                // Sirena
-                if(frames % 20 < 10) {
-                    ctx.fillStyle = 'blue';
-                    ctx.beginPath(); ctx.arc(cop.x, cop.y, 5, 0, Math.PI*2); ctx.fill();
-                } else {
-                    ctx.fillStyle = 'red';
-                    ctx.beginPath(); ctx.arc(cop.x, cop.y, 5, 0, Math.PI*2); ctx.fill();
+            // 4. Limpieza (Obstáculos lejanos)
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                if (obstacles[i].position.distanceTo(player.position) > 100) {
+                    scene.remove(obstacles[i]);
+                    obstacles.splice(i, 1);
+                } else if (obstacles[i].position.distanceTo(player.position) < 2) {
+                    gameOver(); // Chocar con árbol
                 }
-            });
-
-            // Partículas
-            for(let i=particles.length-1; i>=0; i--) {
-                let p = particles[i];
-                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life;
-                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1.0;
-                if(p.life <= 0) particles.splice(i, 1);
             }
         }
 
-        function drawCar(x, y, angle, color) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(angle);
-            
-            // Sombra
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 15;
-
-            // Cuerpo del auto
-            ctx.fillStyle = color;
-            ctx.fillRect(-10, -17, 20, 34);
-            
-            // Parabrisas
-            ctx.fillStyle = '#000';
-            ctx.fillRect(-8, -5, 16, 8);
-            
-            ctx.shadowBlur = 0;
-            ctx.restore();
-        }
-
-        function spawnPolice() {
-            // Spawnear en los bordes aleatorios
-            let x, y;
-            if(Math.random() > 0.5) {
-                x = Math.random() > 0.5 ? -20 : canvas.width + 20;
-                y = Math.random() * canvas.height;
-            } else {
-                x = Math.random() * canvas.width;
-                y = Math.random() > 0.5 ? -20 : canvas.height + 20;
-            }
-            police.push({ x: x, y: y, angle: 0 });
-        }
-
-        function loop() {
+        function render() {
+            requestAnimationFrame(render);
             update();
-            draw();
-            if(isRunning) requestAnimationFrame(loop);
+            renderer.render(scene, camera);
         }
 
-        function startGame() {
-            startScreen.style.display = 'none';
-            score = 0;
-            frames = 0;
-            player.x = canvas.width/2;
-            player.y = canvas.height/2;
-            player.angle = 0;
-            player.speed = 0;
-            police.length = 0;
-            particles = [];
-            isRunning = true;
-            isGameOver = false;
-            loop();
+        function onWindowResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 40;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         }
+
+        // CONTROL DEL JUEGO
+        window.startGame = function() {
+            startScreen.style.display = 'none';
+            
+            // Resetear escena
+            if(player) scene.remove(player);
+            police.forEach(p => scene.remove(p));
+            obstacles.forEach(o => scene.remove(o));
+            police = [];
+            obstacles = [];
+
+            // Crear Jugador
+            player = createCar(0xffff00); // Amarillo (Neon)
+            scene.add(player);
+            player.position.set(0, 0, 0);
+            
+            score = 0;
+            scoreEl.innerText = 0;
+            frameCount = 0;
+            isRunning = true;
+        };
+
+        window.resetGame = function() {
+            gameOverScreen.style.display = 'none';
+            startGame();
+        };
 
         function gameOver() {
             isRunning = false;
-            isGameOver = true;
-            finalScoreEl.innerText = score;
             gameOverScreen.style.display = 'block';
+            finalScoreEl.innerText = score;
             
-            if(window.guardarPuntaje) window.guardarPuntaje("Neon Chase", score);
+            // Guardar en Firebase
+            if(window.guardarPuntaje) window.guardarPuntaje("Voxel Chase", score);
         }
 
-        function resetGame() {
-            gameOverScreen.style.display = 'none';
-            startGame();
-        }
-
-        // Render inicial
-        draw();
+        init();
+        render();
 
     </script>
 
