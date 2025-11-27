@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hextris | B-BOX Games</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #000; }
+        .game-frame { flex-grow: 1; border: none; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <a href="index.html" class="logo-text">B-BOX <span>GAMES</span></a>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html">Volver</a>
+                <div id="user-area" style="display: inline-block; margin-left: 20px;">
+                    <div id="userInfo" style="display: none; align-items: center; gap: 10px;">
+                        <img id="userPhoto" src="" alt="User" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #00fff2;">
+                        <span id="userName" style="color: #fff; font-weight: 600;"></span>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <iframe src="https://hextris.io/" class="game-frame" allowfullscreen></iframe>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBduWRoZK8ia-UP3W-tJWtVu3_lTHKRp9M",
+            authDomain: "blox-games-78e8b.firebaseapp.com",
+            projectId: "blox-games-78e8b",
+            storageBucket: "blox-games-78e8b.firebasestorage.app",
+            messagingSenderId: "882404453394",
+            appId: "1:882404453394:web:c79ee2a8cb29a6cd837ccb",
+            measurementId: "G-BFKX5P23SN"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('userPhoto').src = user.photoURL;
+                document.getElementById('userName').innerText = user.displayName.split(' ')[0];
+            }
+        });
+    </script>
+</body>
+</html>
