@@ -2,17 +2,90 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird | B-BOX Games</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Flappy | B-BOX Games</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #000; }
-        .game-frame { flex-grow: 1; border: none; width: 100%; height: 100%; }
+        body {
+            margin: 0;
+            background-color: #050505;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Navbar fija arriba */
+        .navbar { flex-shrink: 0; }
+
+        #game-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: radial-gradient(circle, #1a1a2e 0%, #000 100%);
+        }
+
+        canvas {
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.2);
+            background-color: #000;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        #score-display {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 40px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .msg {
+            font-size: 24px;
+            color: #00fff2;
+            text-shadow: 0 0 10px #00fff2;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        button {
+            pointer-events: auto;
+            background: #00fff2;
+            border: none;
+            padding: 10px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 5px;
+        }
+        button:hover { background: #fff; }
+
     </style>
 </head>
 <body>
-    
+
     <header class="navbar">
         <div class="container">
             <div class="logo">
@@ -30,7 +103,179 @@
         </div>
     </header>
 
-    <iframe src="https://flappy-bird.io/" class="game-frame" allowfullscreen></iframe>
+    <div id="game-container">
+        <div id="score-display">0</div>
+        <canvas id="gameCanvas" width="320" height="480"></canvas>
+        
+        <div id="ui-layer">
+            <div id="start-msg" class="msg">ESPACIO o CLICK para saltar</div>
+            <div id="game-over-msg" class="msg" style="display: none;">
+                GAME OVER<br>
+                <button onclick="resetGame()">Reintentar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score-display');
+        const startMsg = document.getElementById('start-msg');
+        const gameOverMsg = document.getElementById('game-over-msg');
+
+        // Variables del juego
+        let frames = 0;
+        let score = 0;
+        let isRunning = false;
+        let isGameOver = false;
+
+        const bird = {
+            x: 50,
+            y: 150,
+            w: 20,
+            h: 20,
+            radius: 10,
+            velocity: 0,
+            gravity: 0.25,
+            jump: 4.6,
+            color: '#ffff00'
+        };
+
+        const pipes = [];
+        const pipeWidth = 40;
+        const pipeGap = 120; // Espacio entre tubos
+        const pipeSpeed = 2;
+
+        // Input
+        function jump() {
+            if (isGameOver) return;
+            if (!isRunning) {
+                isRunning = true;
+                startMsg.style.display = 'none';
+                loop();
+                return;
+            }
+            bird.velocity = -bird.jump;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') jump();
+        });
+        canvas.addEventListener('mousedown', jump);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+
+        function drawBird() {
+            ctx.fillStyle = bird.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = bird.color;
+            ctx.beginPath();
+            ctx.arc(bird.x + bird.w/2, bird.y + bird.h/2, bird.radius, 0, Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = '#00ff88'; // Neón verde
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#00ff88';
+            
+            pipes.forEach(pipe => {
+                // Tubo de arriba
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                // Tubo de abajo
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        function update() {
+            // Pájaro
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            // Suelo y Techo
+            if (bird.y + bird.h >= canvas.height || bird.y <= 0) {
+                gameOver();
+            }
+
+            // Generar Tubos
+            if (frames % 100 === 0) {
+                let topHeight = Math.random() * (canvas.height - pipeGap - 40) + 20;
+                let bottomHeight = canvas.height - pipeGap - topHeight;
+                pipes.push({
+                    x: canvas.width,
+                    top: topHeight,
+                    bottom: bottomHeight,
+                    passed: false
+                });
+            }
+
+            // Mover Tubos
+            for (let i = 0; i < pipes.length; i++) {
+                let p = pipes[i];
+                p.x -= pipeSpeed;
+
+                // Colisión
+                if (
+                    bird.x < p.x + pipeWidth &&
+                    bird.x + bird.w > p.x &&
+                    (bird.y < p.top || bird.y + bird.h > canvas.height - p.bottom)
+                ) {
+                    gameOver();
+                }
+
+                // Puntos
+                if (p.x + pipeWidth < bird.x && !p.passed) {
+                    score++;
+                    scoreEl.innerText = score;
+                    p.passed = true;
+                }
+
+                // Eliminar tubos viejos
+                if (p.x + pipeWidth < 0) {
+                    pipes.shift();
+                    i--;
+                }
+            }
+            frames++;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawPipes();
+            drawBird();
+        }
+
+        function loop() {
+            if (isGameOver) return;
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            gameOverMsg.style.display = 'block';
+        }
+
+        window.resetGame = function() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes.length = 0;
+            score = 0;
+            scoreEl.innerText = '0';
+            frames = 0;
+            isGameOver = false;
+            gameOverMsg.style.display = 'none';
+            loop();
+        }
+
+        // Dibujo inicial
+        draw();
+
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -57,5 +302,6 @@
             }
         });
     </script>
+
 </body>
 </html>
