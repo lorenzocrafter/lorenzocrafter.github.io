@@ -15,9 +15,7 @@
     <header class="navbar">
         <div class="container">
             <div class="logo">
-                <a href="#" class="logo-text">
-                    B-BOX <span>GAMES</span>
-                </a>
+                <a href="#" class="logo-text">B-BOX <span>GAMES</span></a>
             </div>
             
             <nav class="nav-links">
@@ -25,7 +23,7 @@
                 <a href="#juegos">Juegos</a>
                 <a href="ranking.html">Ranking</a>
                 
-                <div id="user-area" style="display: inline-block; margin-left: 20px; display:flex; align-items:center;">
+                <div id="user-area" style="display: flex; align-items: center; margin-left: 30px; gap: 15px;">
                     
                     <div id="coinDisplay" class="coin-badge">💰 0</div>
 
@@ -39,7 +37,7 @@
                             <span id="userName" style="color: #fff; font-weight: 600; font-size: 14px;"></span>
                             <button id="editNameBtn" class="edit-name-btn" style="padding: 0; font-size: 11px; margin-top: 2px;">✎ Cambiar Alias</button>
                         </div>
-                        <button id="logoutBtn" style="background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 4px 10px; border-radius: 6px; cursor: pointer; margin-left: 10px;">✕</button>
+                        <button id="logoutBtn" style="background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 4px 10px; border-radius: 6px; cursor: pointer; margin-left: 5px;">✕</button>
                     </div>
                 </div>
             </nav>
@@ -90,10 +88,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'crossy', event)">♥</div>
                 <div onclick="window.location.href='crossy_road.html'">
                     <img src="portada_crossy_road.jpg" alt="Neon Crossy Road">
-                    <div class="card-info">
-                        <h3>Crossy Road</h3>
-                        <span>Clásico Arcade</span>
-                    </div>
+                    <div class="card-info"><h3>Crossy Road</h3><span>Clásico Arcade</span></div>
                 </div>
             </div>
             
@@ -101,10 +96,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'spell', event)">♥</div>
                 <div onclick="window.location.href='spell_caster.html'">
                     <img src="portada_spell_caster.jpg" alt="Spell Caster">
-                    <div class="card-info">
-                        <h3>Spell Caster</h3>
-                        <span>Popular</span>
-                    </div>
+                    <div class="card-info"><h3>Spell Caster</h3><span>Popular</span></div>
                 </div>
             </div>
             
@@ -112,10 +104,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'chrono', event)">♥</div>
                 <div onclick="window.location.href='chrono_echo.html'">
                     <img src="portada_chrono.jpg" alt="Chrono Echo">
-                    <div class="card-info">
-                        <h3>Chrono-Echo</h3>
-                        <span style="color:#00fff2">★ NUEVO</span>
-                    </div>
+                    <div class="card-info"><h3>Chrono-Echo</h3><span style="color:#00fff2">★ NUEVO</span></div>
                 </div>
             </div>
 
@@ -123,21 +112,15 @@
                 <div class="fav-btn" onclick="toggleFav(this, '2048', event)">♥</div>
                 <div onclick="window.location.href='2048.html'">
                     <img src="portada_2048.jpg" alt="2048 Puzzle">
-                    <div class="card-info">
-                        <h3>2048</h3>
-                        <span>Puzzle Lógico</span>
-                    </div>
+                    <div class="card-info"><h3>2048</h3><span>Puzzle Lógico</span></div>
                 </div>
             </div>
 
-            <div class="game-card" data-category="accion" data-tag="popular" data-game-id="drift">
-                <div class="fav-btn" onclick="toggleFav(this, 'drift', event)">♥</div>
+            <div class="game-card" data-category="accion" data-tag="popular" data-game-id="escape">
+                <div class="fav-btn" onclick="toggleFav(this, 'escape', event)">♥</div>
                 <div onclick="window.location.href='drift.html'">
                     <img src="portada_drift.jpg" alt="Escape Road">
-                    <div class="card-info">
-                        <h3>Escape Road</h3>
-                        <span style="color:#ffcc00">★ Viral</span>
-                    </div>
+                    <div class="card-info"><h3>Escape Road</h3><span style="color:#ffcc00">★ Viral</span></div>
                 </div>
             </div>
 
@@ -145,10 +128,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'hextris', event)">♥</div>
                 <div onclick="window.location.href='hextris.html'">
                     <img src="portada_hextris.jpg" alt="Hextris">
-                    <div class="card-info">
-                        <h3>Hextris</h3>
-                        <span>Puzzle Rápido</span>
-                    </div>
+                    <div class="card-info"><h3>Hextris</h3><span>Puzzle Rápido</span></div>
                 </div>
             </div>
 
@@ -156,10 +136,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'minecraft', event)">♥</div>
                 <div onclick="window.location.href='minecraft.html'">
                     <img src="portada_minecraft.jpg" alt="Minecraft Web">
-                    <div class="card-info">
-                        <h3>Minecraft Web</h3>
-                        <span>Mundo Abierto</span>
-                    </div>
+                    <div class="card-info"><h3>Minecraft Web</h3><span>Mundo Abierto</span></div>
                 </div>
             </div>
 
@@ -167,10 +144,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'flappy', event)">♥</div>
                 <div onclick="window.location.href='flappy.html'">
                     <img src="portada_flappy.jpg" alt="Flappy Neon">
-                    <div class="card-info">
-                        <h3>Flappy Neon</h3>
-                        <span>Arcade Difícil</span>
-                    </div>
+                    <div class="card-info"><h3>Flappy Neon</h3><span>Arcade Difícil</span></div>
                 </div>
             </div>
 
@@ -178,10 +152,7 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'pacman', event)">♥</div>
                 <div onclick="window.location.href='pacman.html'">
                     <img src="portada_pacman.jpg" alt="Pacman">
-                    <div class="card-info">
-                        <h3>Pacman</h3>
-                        <span>El Rey Retro</span>
-                    </div>
+                    <div class="card-info"><h3>Pacman</h3><span>El Rey Retro</span></div>
                 </div>
             </div>
 
@@ -189,21 +160,21 @@
     </section>
 
     <div id="aliasModal" class="modal-overlay">
-        <div class="modal-content" style="border: 1px solid #7000ff; box-shadow: 0 0 40px rgba(112, 0, 255, 0.4); padding: 30px; max-width: 400px; width: 90%; display: flex; flex-direction: column; align-items: center;">
-            <h3 style="color: #fff; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px;">Editar Perfil</h3>
-            <label style="color: #aaa; font-size: 12px; display: block; margin-bottom: 5px; text-align: left; width: 100%;">GAMERTAG</label>
-            <input type="text" id="newAliasInput" class="search-input" style="text-align: center; margin-bottom: 20px; font-weight: bold; color: #00fff2; box-sizing: border-box;" placeholder="Tu Nombre..." maxlength="12" autocomplete="off">
-            <label style="color: #aaa; font-size: 12px; display: block; margin-bottom: 10px; text-align: left; width: 100%;">ELIGE TU AVATAR</label>
+        <div class="modal-content" style="border: 1px solid #7000ff; box-shadow: 0 0 40px rgba(112, 0, 255, 0.4); padding: 40px 30px; max-width: 400px; width: 90%; display: flex; flex-direction: column; align-items: center;">
+            <h3 style="color: #fff; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Editar Perfil</h3>
+            <label style="color: #aaa; font-size: 12px; margin-bottom: 5px; width: 85%;">GAMERTAG</label>
+            <input type="text" id="newAliasInput" class="search-input" style="width: 85%; text-align: center; margin-bottom: 25px; font-weight: bold; color: #00fff2; font-size: 18px; padding: 12px; box-sizing: border-box;" placeholder="Tu Nombre..." maxlength="12" autocomplete="off">
+            <label style="color: #aaa; font-size: 12px; margin-bottom: 10px; width: 85%;">ELIGE TU AVATAR</label>
             <div class="avatar-grid" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap;">
-                <img src="" id="googleAvatarOption" class="avatar-option selected" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #00fff2; cursor: pointer; padding: 2px;">
+                <img src="" id="googleAvatarOption" class="avatar-option selected" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #00fff2;">
                 <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Felix" class="avatar-option" data-src="https://api.dicebear.com/9.x/avataaars/svg?seed=Felix">
                 <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Cyborg" class="avatar-option" data-src="https://api.dicebear.com/9.x/bottts/svg?seed=Cyborg">
                 <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Aneka" class="avatar-option" data-src="https://api.dicebear.com/9.x/avataaars/svg?seed=Aneka">
                 <img src="https://api.dicebear.com/9.x/shapes/svg?seed=Neon" class="avatar-option" data-src="https://api.dicebear.com/9.x/shapes/svg?seed=Neon">
             </div>
-            <div style="display: flex; gap: 10px; justify-content: center; width: 100%;">
-                <button id="cancelAliasBtn" class="btn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #555; color: #ccc; padding: 10px 0; border-radius: 10px;">Cancelar</button>
-                <button id="saveAliasBtn" class="btn" style="flex: 1; background: linear-gradient(45deg, #7000ff, #a000ff); border: none; color: white; padding: 10px 0; border-radius: 10px; font-weight: bold; box-shadow: 0 0 15px rgba(112,0,255,0.4);">Guardar</button>
+            <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
+                <button id="cancelAliasBtn" class="btn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #555; color: #ccc; padding: 10px 0; border-radius: 10px; max-width: 120px;">Cancelar</button>
+                <button id="saveAliasBtn" class="btn" style="flex: 1; background: linear-gradient(45deg, #7000ff, #a000ff); border: none; color: white; padding: 10px 0; border-radius: 10px; font-weight: bold; box-shadow: 0 0 15px rgba(112,0,255,0.4); max-width: 120px;">Guardar</button>
             </div>
         </div>
     </div>
