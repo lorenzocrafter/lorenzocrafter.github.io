@@ -84,7 +84,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'crossy', event)">♥</div>
                 <div onclick="window.location.href='crossy_road.html'">
                     <img src="portada_crossy_road.jpg" alt="Neon Crossy Road">
-                    <div class="card-info"><h3>Crossy Road</h3><span>Clásico Arcade</span></div>
+                    <div class="card-info">
+                        <h3>Crossy Road</h3>
+                        <span>Clásico Arcade</span>
+                    </div>
                 </div>
             </div>
             
@@ -92,7 +95,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'spell', event)">♥</div>
                 <div onclick="window.location.href='spell_caster.html'">
                     <img src="portada_spell_caster.jpg" alt="Spell Caster">
-                    <div class="card-info"><h3>Spell Caster</h3><span>Popular</span></div>
+                    <div class="card-info">
+                        <h3>Spell Caster</h3>
+                        <span>Popular</span>
+                    </div>
                 </div>
             </div>
             
@@ -100,7 +106,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'chrono', event)">♥</div>
                 <div onclick="window.location.href='chrono_echo.html'">
                     <img src="portada_chrono.jpg" alt="Chrono Echo">
-                    <div class="card-info"><h3>Chrono-Echo</h3><span style="color:#00fff2">★ NUEVO</span></div>
+                    <div class="card-info">
+                        <h3>Chrono-Echo</h3>
+                        <span style="color:#00fff2">★ NUEVO</span>
+                    </div>
                 </div>
             </div>
 
@@ -108,15 +117,21 @@
                 <div class="fav-btn" onclick="toggleFav(this, '2048', event)">♥</div>
                 <div onclick="window.location.href='2048.html'">
                     <img src="portada_2048.jpg" alt="2048 Puzzle">
-                    <div class="card-info"><h3>2048</h3><span>Puzzle Lógico</span></div>
+                    <div class="card-info">
+                        <h3>2048</h3>
+                        <span>Puzzle Lógico</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="game-card" data-category="accion" data-tag="popular" onclick="window.location.href='slope.html'">
-                <img src="portada_slope.jpg" alt="Slope">
-                <div class="card-info">
-                    <h3>Slope</h3>
-                    <span style="color:#00ff88">★ Speedrun</span>
+            <div class="game-card" data-category="accion" data-tag="popular" data-game-id="drift">
+                <div class="fav-btn" onclick="toggleFav(this, 'drift', event)">♥</div>
+                <div onclick="window.location.href='drift.html'">
+                    <img src="portada_drift.jpg" alt="Drift Boss">
+                    <div class="card-info">
+                        <h3>Drift Boss</h3>
+                        <span style="color:#ffcc00">★ Adictivo</span>
+                    </div>
                 </div>
             </div>
 
@@ -124,7 +139,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'hextris', event)">♥</div>
                 <div onclick="window.location.href='hextris.html'">
                     <img src="portada_hextris.jpg" alt="Hextris">
-                    <div class="card-info"><h3>Hextris</h3><span>Puzzle Rápido</span></div>
+                    <div class="card-info">
+                        <h3>Hextris</h3>
+                        <span>Puzzle Rápido</span>
+                    </div>
                 </div>
             </div>
 
@@ -132,7 +150,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'minecraft', event)">♥</div>
                 <div onclick="window.location.href='minecraft.html'">
                     <img src="portada_minecraft.jpg" alt="Minecraft Web">
-                    <div class="card-info"><h3>Minecraft Web</h3><span>Mundo Abierto</span></div>
+                    <div class="card-info">
+                        <h3>Minecraft Web</h3>
+                        <span>Mundo Abierto</span>
+                    </div>
                 </div>
             </div>
 
@@ -140,7 +161,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'flappy', event)">♥</div>
                 <div onclick="window.location.href='flappy.html'">
                     <img src="portada_flappy.jpg" alt="Flappy Bird">
-                    <div class="card-info"><h3>Flappy Bird</h3><span>Arcade Difícil</span></div>
+                    <div class="card-info">
+                        <h3>Flappy Bird</h3>
+                        <span>Arcade Difícil</span>
+                    </div>
                 </div>
             </div>
 
@@ -148,7 +172,10 @@
                 <div class="fav-btn" onclick="toggleFav(this, 'pacman', event)">♥</div>
                 <div onclick="window.location.href='pacman.html'">
                     <img src="portada_pacman.jpg" alt="Pacman">
-                    <div class="card-info"><h3>Pacman</h3><span>El Rey Retro</span></div>
+                    <div class="card-info">
+                        <h3>Pacman</h3>
+                        <span>El Rey Retro</span>
+                    </div>
                 </div>
             </div>
 
@@ -182,7 +209,9 @@
         <div class="chat-input-area"><input type="text" id="chatInput" placeholder="Escribe algo..." autocomplete="off"><button id="sendBtn">➤</button></div>
     </div>
 
-    <footer style="text-align: center; padding: 40px; color: #444; font-size: 0.8rem; margin-top: 40px;">&copy; 2025 B-BOX Games. Creado con pasión.</footer>
+    <footer style="text-align: center; padding: 40px; color: #444; font-size: 0.8rem; margin-top: 40px;">
+        &copy; 2025 B-BOX Games. Creado con pasión.
+    </footer>
 
     <script type="module" src="script.js"></script>
 
