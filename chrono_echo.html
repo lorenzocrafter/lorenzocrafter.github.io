@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chrono-Echo DX | Blox Games</title>
     <style>
         body {
@@ -17,6 +17,7 @@
             height: 100vh;
             overflow: hidden;
             user-select: none;
+            touch-action: none; /* Vital para juegos móviles */
         }
 
         h1 {
@@ -25,30 +26,35 @@
             letter-spacing: 4px;
             color: #00fff2;
             text-shadow: 0 0 15px #00fff2;
-            font-size: 28px;
+            font-size: 20px; /* Un poco más chico para móvil */
             z-index: 2;
         }
 
         #gameContainer {
             position: relative;
-            box-shadow: 0 0 50px rgba(0, 255, 242, 0.15);
+            box-shadow: 0 0 30px rgba(0, 255, 242, 0.15);
             border: 2px solid #333;
             background-color: #0a0a10;
+            /* Ajuste para móvil */
+            max-width: 100%;
+            max-height: 60vh; 
         }
 
         canvas {
             display: block;
             cursor: crosshair;
+            width: 100%;
+            height: 100%;
         }
 
         #ui {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
             display: flex;
             justify-content: space-between;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             pointer-events: none;
             color: #fff;
@@ -56,57 +62,101 @@
             z-index: 5;
         }
 
-        .hud-label { color: #aaa; font-size: 14px; }
+        .hud-label { color: #aaa; font-size: 12px; }
         .hud-val { color: #00fff2; }
 
-        /* Pantallas superpuestas (Start / Game Over) */
+        /* Pantallas superpuestas */
         .overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
-            display: flex; /* Flex para centrar */
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
             z-index: 10;
             backdrop-filter: blur(5px);
             transition: opacity 0.3s;
         }
 
-        #startScreen { display: flex; cursor: pointer; }
-        #gameOverScreen { display: none; }
+        #startScreen { display: flex; cursor: pointer; text-align: center;}
+        #gameOverScreen { display: none; text-align: center; }
 
         button {
             background: transparent;
             border: 2px solid #00fff2;
             color: #00fff2;
-            padding: 15px 30px;
-            font-size: 18px;
+            padding: 10px 20px;
+            font-size: 16px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
             text-transform: uppercase;
-            margin-top: 25px;
+            margin-top: 20px;
             box-shadow: 0 0 15px rgba(0, 255, 242, 0.2);
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
-        button:hover {
-            background: #00fff2;
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 255, 242, 0.6);
-        }
+        button:hover { background: #00fff2; color: #000; }
         
         .instructions {
-            font-size: 12px; opacity: 0.6; margin-top: 10px; text-align: center;
-            color: #aaa; z-index: 2;
+            font-size: 10px; opacity: 0.6; margin-top: 5px; text-align: center; color: #aaa;
         }
 
         .blink { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- CONTROLES MÓVILES --- */
+        #mobile-controls {
+            display: none; /* Oculto en PC */
+            width: 100%;
+            max-width: 600px;
+            margin-top: 15px;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        /* D-PAD (Izquierda) */
+        .dpad {
+            display: grid;
+            grid-template-columns: 50px 50px 50px;
+            grid-template-rows: 50px 50px;
+            gap: 5px;
+        }
+        
+        .ctrl-btn {
+            width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 242, 0.5);
+            border-radius: 8px;
+            color: #00fff2;
+            font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            user-select: none;
+            cursor: pointer;
+        }
+        .ctrl-btn:active { background: rgba(0, 255, 242, 0.3); }
+
+        /* Botón Disparo (Derecha) */
+        .fire-btn {
+            width: 70px; height: 70px;
+            background: rgba(255, 71, 87, 0.2);
+            border: 2px solid #ff4757;
+            border-radius: 50%;
+            color: #ff4757;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            user-select: none;
+            margin-top: 20px;
+        }
+        .fire-btn:active { background: rgba(255, 71, 87, 0.5); transform: scale(0.95); }
+
+        /* Mostrar solo en pantallas táctiles/pequeñas */
+        @media (hover: none) and (pointer: coarse), (max-width: 800px) {
+            #mobile-controls { display: flex; }
+            .instructions { display: none; } /* Ocultar texto de teclado */
+        }
+
     </style>
 </head>
 <body>
@@ -117,33 +167,37 @@
         <canvas id="gameCanvas" width="700" height="500"></canvas>
         
         <div id="ui">
-            <div>
-                <span class="hud-label">ECOS:</span> <span id="scoreVal" class="hud-val">0</span>
-            </div>
-            <div>
-                <span class="hud-label">RÉCORD:</span> <span id="highScoreVal" style="color: #ffcc00;">0</span>
-            </div>
+            <div><span class="hud-label">ECOS:</span> <span id="scoreVal" class="hud-val">0</span></div>
+            <div><span class="hud-label">RÉCORD:</span> <span id="highScoreVal" style="color: #ffcc00;">0</span></div>
         </div>
 
         <div id="startScreen" class="overlay" onclick="startGame()">
             <h2 style="color: #00fff2; font-size: 24px;">SISTEMA LISTO</h2>
-            <p class="blink" style="margin-top:20px;">[ HAZ CLICK PARA INICIAR ]</p>
-            <p style="font-size: 12px; margin-top: 50px; color: #666;">SONIDO ESTÉREO ACTIVADO</p>
+            <p class="blink" style="margin-top:20px;">[ TOCAR PARA INICIAR ]</p>
         </div>
         
         <div id="gameOverScreen" class="overlay">
-            <h2 style="color: #ff2a2a; font-size: 40px; margin: 0; text-shadow: 0 0 20px red;">PARADOJA</h2>
+            <h2 style="color: #ff2a2a; font-size: 30px; margin: 0; text-shadow: 0 0 20px red;">PARADOJA</h2>
             <p id="deathCause" style="color: #fff; opacity: 0.8; font-style: italic;">...</p>
-            <p style="font-size: 20px; margin-top: 10px;">Puntuación: <span id="finalScore" style="color:#00fff2">0</span></p>
-            <button onclick="resetGame()">Reiniciar Sistema</button>
+            <p style="font-size: 18px; margin-top: 10px;">Puntuación: <span id="finalScore" style="color:#00fff2">0</span></p>
+            <button onclick="resetGame()">Reiniciar</button>
             <a href="index.html" style="margin-top: 20px; color: #666; text-decoration: none; font-size: 14px;">Volver al Menú</a>
         </div>
     </div>
 
-    <p class="instructions">
-        [WASD] Moverse &nbsp;|&nbsp; [ESPACIO] Disparar <br>
-        Sobrevive. Mata Zombies. Evita tu pasado.
-    </p>
+    <div id="mobile-controls">
+        <div class="dpad">
+            <div></div>
+            <div class="ctrl-btn" id="btn-up">▲</div>
+            <div></div>
+            <div class="ctrl-btn" id="btn-left">◀</div>
+            <div class="ctrl-btn" id="btn-down">▼</div>
+            <div class="ctrl-btn" id="btn-right">▶</div>
+        </div>
+        <div class="fire-btn" id="btn-fire">SHOOT</div>
+    </div>
+
+    <p class="instructions">[WASD] Moverse | [ESPACIO] Disparar</p>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
@@ -155,7 +209,7 @@
     const gameOverScreen = document.getElementById('gameOverScreen');
     const startScreen = document.getElementById('startScreen');
 
-    // --- AUDIO SYSTEM (Sintetizador Web Audio API) ---
+    // --- AUDIO SYSTEM ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
 
@@ -171,16 +225,12 @@
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'square';
             osc.frequency.setValueAtTime(400, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-            
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         },
         explode: () => {
             if(!audioCtx) return;
@@ -188,16 +238,12 @@
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(150, audioCtx.currentTime);
             osc.frequency.linearRampToValueAtTime(10, audioCtx.currentTime + 0.2);
-            
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
         },
         pickup: () => {
             if(!audioCtx) return;
@@ -205,16 +251,12 @@
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'sine';
             osc.frequency.setValueAtTime(600, audioCtx.currentTime);
             osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-            
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.3);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
         },
         dead: () => {
             if(!audioCtx) return;
@@ -222,20 +264,16 @@
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(200, audioCtx.currentTime);
             osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 1.0);
-            
             gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 1.0);
+            osc.start(); osc.stop(audioCtx.currentTime + 1.0);
         }
     };
 
-    // --- Persistencia (High Score) ---
+    // --- Persistencia ---
     let highScore = localStorage.getItem('chronoHighScore') || 0;
     highScoreEl.innerText = highScore;
 
@@ -247,48 +285,57 @@
         }
     }
 
-    // --- Configuración Global ---
+    // --- Variables ---
     const TILE_SIZE = 24; 
     let isGameRunning = false;
     let isGameOver = false;
     let score = 0;
     let frames = 0;
 
-    // --- Jugador ---
-    let player = { 
-        x: canvas.width/2, y: canvas.height/2, 
-        speed: 4, 
-        color: '#00fff2', 
-        lastDir: {x: 1, y: 0} 
-    };
+    let player = { x: canvas.width/2, y: canvas.height/2, speed: 4, color: '#00fff2', lastDir: {x: 1, y: 0} };
     let velocity = { x: 0, y: 0 };
-
-    // --- Sistema de Grabación ---
     let currentRecording = []; 
     let echoes = []; 
-
-    // --- Objetos ---
     let goal = { x: 0, y: 0, size: 12, active: false, pulse: 0 };
     let bullets = [];
     let enemies = [];
     let particles = [];
     let enemySpawnRate = 120;
 
-    // --- Input ---
+    // --- Input (Teclado + Táctil) ---
     const keys = {};
     let spacePressedPreviously = false;
 
     window.addEventListener('keydown', (e) => keys[e.key] = true);
     window.addEventListener('keyup', (e) => keys[e.key] = false);
 
-    // --- Helpers ---
+    // Funciones para botones táctiles
+    const setKey = (key, val) => keys[key] = val;
+    const bindTouch = (id, key) => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); setKey(key, true); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); setKey(key, false); });
+        // Mouse para pruebas en PC
+        btn.addEventListener('mousedown', () => setKey(key, true));
+        btn.addEventListener('mouseup', () => setKey(key, false));
+    };
+
+    bindTouch('btn-up', 'ArrowUp');
+    bindTouch('btn-down', 'ArrowDown');
+    bindTouch('btn-left', 'ArrowLeft');
+    bindTouch('btn-right', 'ArrowRight');
+    
+    // Disparo Táctil
+    const fireBtn = document.getElementById('btn-fire');
+    fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[' '] = true; });
+    fireBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys[' '] = false; });
+    fireBtn.addEventListener('mousedown', () => keys[' '] = true);
+    fireBtn.addEventListener('mouseup', () => keys[' '] = false);
+
+
+    // --- Lógica del Juego ---
     function checkCollision(rect1, rect2, size1, size2) {
-        return (
-            rect1.x < rect2.x + size2 &&
-            rect1.x + size1 > rect2.x &&
-            rect1.y < rect2.y + size2 &&
-            rect1.y + size1 > rect2.y
-        );
+        return (rect1.x < rect2.x + size2 && rect1.x + size1 > rect2.x && rect1.y < rect2.y + size2 && rect1.y + size1 > rect2.y);
     }
 
     function spawnParticles(x, y, color, amount, speedVar) {
@@ -297,9 +344,7 @@
                 x: x, y: y,
                 vx: (Math.random() - 0.5) * speedVar,
                 vy: (Math.random() - 0.5) * speedVar,
-                life: 1.0,
-                color: color,
-                size: Math.random() * 3 + 2
+                life: 1.0, color: color, size: Math.random() * 3 + 2
             });
         }
     }
@@ -307,18 +352,14 @@
     function updateParticles() {
         for(let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life -= 0.03;
+            p.x += p.vx; p.y += p.vy; p.life -= 0.03;
             if(p.life <= 0) particles.splice(i, 1);
         }
     }
 
     function drawParticles() {
         particles.forEach(p => {
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, p.size, p.size);
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
         });
         ctx.globalAlpha = 1.0;
     }
@@ -339,34 +380,25 @@
             case 2: x = Math.random() * canvas.width; y = -buffer; break; 
             case 3: x = Math.random() * canvas.width; y = canvas.height + buffer; break; 
         }
-        enemies.push({
-            x: x, y: y, speed: Math.random() * 1.2 + 0.8, color: '#ff2a2a'
-        });
+        enemies.push({ x: x, y: y, speed: Math.random() * 1.2 + 0.8, color: '#ff2a2a' });
     }
 
     function shoot(shooterX, shooterY, dirX, dirY, isEchoShot) {
         let vx = dirX * 9;
         let vy = dirY * 9;
         if (vx === 0 && vy === 0) vx = 9; 
-        
         bullets.push({
-            x: shooterX + TILE_SIZE/2 - 3,
-            y: shooterY + TILE_SIZE/2 - 3,
-            vx: vx, vy: vy,
-            size: 6,
-            isEchoShot: isEchoShot,
+            x: shooterX + TILE_SIZE/2 - 3, y: shooterY + TILE_SIZE/2 - 3,
+            vx: vx, vy: vy, size: 6, isEchoShot: isEchoShot,
             color: isEchoShot ? '#5555ff' : '#ffffff' 
         });
-
-        // Solo suena si dispara el jugador o está cerca
         if (!isEchoShot) sfx.shoot();
     }
 
     function createEcho() {
         echoes.push({
             recording: JSON.parse(JSON.stringify(currentRecording)),
-            currentIndex: 0,
-            color: `hsl(${180 + Math.random()*40}, 100%, 70%)` 
+            currentIndex: 0, color: `hsl(${180 + Math.random()*40}, 100%, 70%)` 
         });
         currentRecording = [];
         if(enemySpawnRate > 25) enemySpawnRate -= 8;
@@ -375,18 +407,13 @@
     }
 
     function drawGrid() {
-        ctx.strokeStyle = 'rgba(0, 255, 242, 0.08)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0, 255, 242, 0.08)'; ctx.lineWidth = 1;
         const gridSize = 40;
         let offsetX = player.x % gridSize;
         let offsetY = player.y % gridSize;
         ctx.beginPath();
-        for(let x = -offsetX; x < canvas.width; x += gridSize) {
-            ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
-        }
-        for(let y = -offsetY; y < canvas.height; y += gridSize) {
-            ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
-        }
+        for(let x = -offsetX; x < canvas.width; x += gridSize) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+        for(let y = -offsetY; y < canvas.height; y += gridSize) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
         ctx.stroke();
     }
 
@@ -405,8 +432,7 @@
             player.lastDir = { x: Math.sign(velocity.x), y: Math.sign(velocity.y) };
         }
 
-        player.x += velocity.x;
-        player.y += velocity.y;
+        player.x += velocity.x; player.y += velocity.y;
         player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, player.x));
         player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, player.y));
 
@@ -428,36 +454,25 @@
         for (let i = bullets.length - 1; i >= 0; i--) {
             let b = bullets[i];
             b.x += b.vx; b.y += b.vy;
-            if (b.x < -50 || b.x > canvas.width + 50 || b.y < -50 || b.y > canvas.height + 50) {
-                bullets.splice(i, 1);
-            }
+            if (b.x < -50 || b.x > canvas.width + 50 || b.y < -50 || b.y > canvas.height + 50) bullets.splice(i, 1);
         }
 
         // Enemigos
         if (frames % Math.floor(enemySpawnRate) === 0) spawnEnemy();
-
         for (let i = enemies.length - 1; i >= 0; i--) {
             let en = enemies[i];
-            let dx = player.x - en.x;
-            let dy = player.y - en.y;
+            let dx = player.x - en.x; let dy = player.y - en.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
-            if(dist > 0) {
-                en.x += (dx/dist) * en.speed;
-                en.y += (dy/dist) * en.speed;
-            }
+            if(dist > 0) { en.x += (dx/dist) * en.speed; en.y += (dy/dist) * en.speed; }
 
-            if (checkCollision(player, en, TILE_SIZE, TILE_SIZE)) {
-                gameOver("Devorado por la horda.");
-            }
+            if (checkCollision(player, en, TILE_SIZE, TILE_SIZE)) gameOver("Devorado por la horda.");
 
             for (let j = bullets.length - 1; j >= 0; j--) {
                 let b = bullets[j];
                 if (checkCollision(en, b, TILE_SIZE, b.size + 4)) {
                     spawnParticles(en.x + TILE_SIZE/2, en.y + TILE_SIZE/2, '#ff2a2a', 8, 5); 
-                    sfx.explode(); // Sonido
-                    enemies.splice(i, 1);
-                    bullets.splice(j, 1);
-                    break; 
+                    sfx.explode();
+                    enemies.splice(i, 1); bullets.splice(j, 1); break; 
                 }
             }
         }
@@ -466,12 +481,9 @@
         if (goal.active) {
             goal.pulse += 0.1;
             if (checkCollision(player, goal, TILE_SIZE, goal.size)) {
-                score++;
-                scoreEl.innerText = score;
-                createEcho();
-                spawnGoal();
-                goal.active = false;
-                setTimeout(() => goal.active = true, 500);
+                score++; scoreEl.innerText = score;
+                createEcho(); spawnGoal();
+                goal.active = false; setTimeout(() => goal.active = true, 500);
             }
         }
 
@@ -479,18 +491,11 @@
         for (let i = 0; i < echoes.length; i++) {
             let eco = echoes[i];
             let frameData = eco.recording[eco.currentIndex];
-            
-            if (frameData.didShoot) {
-                shoot(frameData.x, frameData.y, frameData.dirX, frameData.dirY, true);
-            }
-
+            if (frameData.didShoot) shoot(frameData.x, frameData.y, frameData.dirX, frameData.dirY, true);
             eco.currentIndex++;
             if (eco.currentIndex >= eco.recording.length) eco.currentIndex = 0;
-
             if (eco.currentIndex > 60) {
-                if (checkCollision(player, frameData, TILE_SIZE, TILE_SIZE)) {
-                     gameOver("Paradoja Temporal: Te tocaste a ti mismo.");
-                }
+                if (checkCollision(player, frameData, TILE_SIZE, TILE_SIZE)) gameOver("Paradoja Temporal: Te tocaste a ti mismo.");
             }
         }
         
@@ -502,92 +507,52 @@
                 gameOver("Fuego Amigo (desde el pasado).");
             }
         }
-
         updateParticles();
     }
 
     function drawSoldier(x, y, color, isGhost) {
-        ctx.save();
-        ctx.translate(x, y);
+        ctx.save(); ctx.translate(x, y);
         if (isGhost) {
-            ctx.globalAlpha = 0.3; 
-            ctx.fillStyle = color;
-            ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+            ctx.globalAlpha = 0.3; ctx.fillStyle = color; ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
         } else {
-            ctx.fillStyle = color;
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 10;
-            ctx.fillRect(4, 8, 16, 16); 
-            ctx.fillStyle = '#fff'; 
-            ctx.fillRect(6, 0, 12, 8);
-            ctx.fillStyle = '#000'; 
-            ctx.fillRect(8, 3, 8, 2);
-            ctx.shadowBlur = 0;
+            ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 10;
+            ctx.fillRect(4, 8, 16, 16); ctx.fillStyle = '#fff'; ctx.fillRect(6, 0, 12, 8);
+            ctx.fillStyle = '#000'; ctx.fillRect(8, 3, 8, 2); ctx.shadowBlur = 0;
         }
         ctx.restore();
     }
 
     function drawZombie(x, y) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.fillStyle = '#ff2a2a';
-        ctx.fillRect(4, 6, 16, 18);
-        ctx.fillStyle = '#ffff00';
-        ctx.shadowColor = '#ffff00';
-        ctx.shadowBlur = 5;
-        ctx.fillRect(6, 2, 4, 4);
-        ctx.fillRect(14, 2, 4, 4);
-        ctx.shadowBlur = 0;
-        ctx.restore();
+        ctx.save(); ctx.translate(x, y);
+        ctx.fillStyle = '#ff2a2a'; ctx.fillRect(4, 6, 16, 18);
+        ctx.fillStyle = '#ffff00'; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 5;
+        ctx.fillRect(6, 2, 4, 4); ctx.fillRect(14, 2, 4, 4);
+        ctx.shadowBlur = 0; ctx.restore();
     }
 
     function draw() {
-        ctx.fillStyle = '#0a0a10';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+        ctx.fillStyle = '#0a0a10'; ctx.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid();
-
         if(goal.active) {
             let s = goal.size + Math.sin(goal.pulse)*2;
-            ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#fff';
-            ctx.beginPath();
-            ctx.arc(goal.x + 12, goal.y + 12, s/2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = '#fff';
+            ctx.beginPath(); ctx.arc(goal.x + 12, goal.y + 12, s/2, 0, Math.PI * 2);
+            ctx.fill(); ctx.shadowBlur = 0;
         }
-
         drawParticles();
-
-        bullets.forEach(b => {
-            ctx.fillStyle = b.color;
-            ctx.fillRect(b.x, b.y, b.size, b.size);
-        });
-
-        echoes.forEach(eco => {
-            let pos = eco.recording[eco.currentIndex];
-            drawSoldier(pos.x, pos.y, eco.color, true);
-        });
-
-        enemies.forEach(en => {
-            drawZombie(en.x, en.y);
-        });
-
-        if (isGameRunning && !isGameOver) {
-            drawSoldier(player.x, player.y, player.color, false);
-        }
+        bullets.forEach(b => { ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, b.size, b.size); });
+        echoes.forEach(eco => { let pos = eco.recording[eco.currentIndex]; drawSoldier(pos.x, pos.y, eco.color, true); });
+        enemies.forEach(en => { drawZombie(en.x, en.y); });
+        if (isGameRunning && !isGameOver) drawSoldier(player.x, player.y, player.color, false);
     }
 
     function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
+        update(); draw(); requestAnimationFrame(loop);
     }
 
     function startGame() {
         startScreen.style.display = 'none';
-        initAudio(); // Activa el audio
+        initAudio();
         isGameRunning = true;
         resetGameLogic();
     }
@@ -595,17 +560,14 @@
     function gameOver(cause) {
         if(isGameOver) return;
         
-        // --- GUARDAR PUNTUACIÓN EN FIREBASE ---
-        if(window.guardarPuntaje) {
-            window.guardarPuntaje("Chrono-Echo", score);
-        }
-        // -------------------------------------
+        // GUARDAR EN FIREBASE
+        if(window.guardarPuntaje) window.guardarPuntaje("Chrono-Echo", score);
 
         isGameOver = true;
-        sfx.dead(); // Sonido de muerte
+        sfx.dead();
         deathCauseEl.innerText = cause;
         finalScoreEl.innerText = score;
-        updateHighScore(); // Guardar récord
+        updateHighScore();
         gameOverScreen.style.display = 'flex';
     }
 
@@ -616,21 +578,14 @@
 
     function resetGameLogic() {
         isGameOver = false;
-        score = 0;
-        scoreEl.innerText = '0';
-        frames = 0;
-        enemySpawnRate = 120;
+        score = 0; scoreEl.innerText = '0';
+        frames = 0; enemySpawnRate = 120;
         particles = [];
-        player.x = canvas.width/2;
-        player.y = canvas.height/2;
-        bullets = [];
-        enemies = [];
-        echoes = [];
-        currentRecording = [];
+        player.x = canvas.width/2; player.y = canvas.height/2;
+        bullets = []; enemies = []; echoes = []; currentRecording = [];
         spawnGoal();
     }
 
-    // Loop inicial
     spawnGoal();
     loop();
 
