@@ -149,15 +149,50 @@
     </section>
 
    <div id="aliasModal" class="modal-overlay">
-        <div class="modal-content" style="border: 1px solid #7000ff; box-shadow: 0 0 40px rgba(112, 0, 255, 0.4);">
-            <h3 style="color: #fff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px;">Nuevo Gamertag</h3>
-            <p style="color: #aaa; font-size: 14px; margin-bottom: 25px;">Escribe el nombre con el que aparecerás en el Ranking.</p>
+        <div class="modal-content" style="
+            border: 1px solid #7000ff; 
+            box-shadow: 0 0 40px rgba(112, 0, 255, 0.4); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 40px 30px;">
             
-            <input type="text" id="newAliasInput" class="search-input" style="text-align: center; margin-bottom: 25px; font-weight: bold; color: #00fff2; font-size: 18px; box-sizing: border-box;" placeholder="Ej: CyberWolf..." maxlength="12" autocomplete="off">
+            <h3 style="color: #fff; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Nuevo Gamertag</h3>
             
-            <div style="display: flex; gap: 15px; justify-content: center;">
-                <button id="cancelAliasBtn" class="btn" style="background: rgba(255,255,255,0.05); border: 1px solid #555; color: #ccc; padding: 10px 20px; border-radius: 10px;">Cancelar</button>
-                <button id="saveAliasBtn" class="btn" style="background: linear-gradient(45deg, #7000ff, #a000ff); border: none; color: white; padding: 10px 25px; border-radius: 10px; font-weight: bold; box-shadow: 0 0 15px rgba(112,0,255,0.4);">Guardar</button>
+            <p style="color: #aaa; font-size: 14px; margin: 0 0 25px 0;">Escribe el nombre con el que aparecerás en el Ranking.</p>
+            
+            <input type="text" id="newAliasInput" class="search-input" style="
+                width: 85%; 
+                text-align: center; 
+                margin-bottom: 25px; 
+                font-weight: bold; 
+                color: #00fff2; 
+                font-size: 18px; 
+                padding: 12px;
+                box-sizing: border-box;" 
+                placeholder="Ej: CyberWolf..." maxlength="12" autocomplete="off">
+            
+            <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
+                <button id="cancelAliasBtn" class="btn" style="
+                    flex: 1; 
+                    background: rgba(255,255,255,0.05); 
+                    border: 1px solid #555; 
+                    color: #ccc; 
+                    padding: 10px 0; 
+                    border-radius: 10px; 
+                    max-width: 120px;">Cancelar</button>
+                
+                <button id="saveAliasBtn" class="btn" style="
+                    flex: 1; 
+                    background: linear-gradient(45deg, #7000ff, #a000ff); 
+                    border: none; 
+                    color: white; 
+                    padding: 10px 0; 
+                    border-radius: 10px; 
+                    font-weight: bold; 
+                    box-shadow: 0 0 15px rgba(112,0,255,0.4); 
+                    max-width: 120px;">Guardar</button>
             </div>
         </div>
     </div>
