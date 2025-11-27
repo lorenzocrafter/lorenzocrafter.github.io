@@ -1,9 +1,7 @@
-// IMPORTAMOS FIREBASE (Auth + Base de Datos)
+// IMPORTAMOS FIREBASE
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// TU CONFIGURACIÓN
 const firebaseConfig = {
   apiKey: "AIzaSyBduWRoZK8ia-UP3W-tJWtVu3_lTHKRp9M",
   authDomain: "blox-games-78e8b.firebaseapp.com",
@@ -14,37 +12,13 @@ const firebaseConfig = {
   measurementId: "G-BFKX5P23SN"
 };
 
-// INICIALIZAR
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app); // Base de datos
 const provider = new GoogleAuthProvider();
 
-// --- FUNCIÓN GLOBAL PARA GUARDAR PUNTOS (Los juegos la llamarán) ---
-window.guardarPuntaje = async (juego, puntos) => {
-    const user = auth.currentUser;
-    if (user) {
-        try {
-            await addDoc(collection(db, "puntuaciones"), {
-                nombre: user.displayName,
-                foto: user.photoURL,
-                juego: juego,
-                puntos: puntos,
-                fecha: new Date()
-            });
-            console.log("Puntaje guardado en la nube!");
-        } catch (e) {
-            console.error("Error al guardar: ", e);
-        }
-    } else {
-        console.log("Jugador no identificado, puntaje solo local.");
-    }
-};
-
-// --- LÓGICA DE LA PÁGINA ---
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. SISTEMA DE LOGIN
+    // --- 1. LOGIN GOOGLE ---
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userInfo = document.getElementById('userInfo');
@@ -53,15 +27,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).then((result) => {
-                console.log("Conectado");
-            }).catch((error) => alert("Error: " + error.message));
+            signInWithPopup(auth, provider)
+                .then((result) => console.log("Conectado"))
+                .catch((error) => alert("Error: " + error.message));
         });
 
         logoutBtn.addEventListener('click', () => {
             signOut(auth).then(() => {
                 localStorage.removeItem('bloxUsername');
-                window.location.reload();
+                location.reload();
             });
         });
 
@@ -79,61 +53,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. SISTEMA DE RANKING (Solo si estamos en la página ranking.html)
-    const tablaRanking = document.getElementById('tabla-ranking-body');
-    if (tablaRanking) {
-        cargarRankingGlobal();
-    }
-
-    async function cargarRankingGlobal() {
-        // Pedimos los 10 mejores puntajes de TODOS los tiempos
-        const q = query(collection(db, "puntuaciones"), orderBy("puntos", "desc"), limit(10));
-        const querySnapshot = await getDocs(q);
-        
-        tablaRanking.innerHTML = ""; // Limpiar tabla (adiós bots)
-
-        let posicion = 1;
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const fila = `
-                <tr>
-                    <td class="player-rank">#${posicion}</td>
-                    <td style="display:flex; align-items:center; gap:10px;">
-                        <img src="${data.foto}" style="width:24px; height:24px; border-radius:50%;">
-                        ${data.nombre}
-                    </td>
-                    <td>${data.juego}</td>
-                    <td class="player-score">${data.puntos}</td>
-                </tr>
-            `;
-            tablaRanking.innerHTML += fila;
-            posicion++;
-        });
-
-        if(querySnapshot.empty) {
-            tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">Todavía nadie ha hecho historia. ¡Sé el primero!</td></tr>`;
-        }
-    }
-
-    // 3. UI y Filtros
-    const buttons = document.querySelectorAll('.category-buttons .btn');
+    // --- 2. SISTEMA DE FILTRADO TOTAL (Categoría + Submenú) ---
+    const catButtons = document.querySelectorAll('.filter-btn'); // Botones grandes
+    const subButtons = document.querySelectorAll('.sub-filter'); // Nuevos/Clásicos
     const cards = document.querySelectorAll('.game-card');
 
-    buttons.forEach(btn => {
+    let currentCategory = 'all';
+    let currentTag = 'all';
+
+    // Función maestra que decide qué mostrar
+    function filterGames() {
+        cards.forEach(card => {
+            const cardCat = card.getAttribute('data-category');
+            const cardTag = card.getAttribute('data-tag');
+
+            // ¿Cumple la categoría? (O está en 'todos')
+            const matchCat = (currentCategory === 'all' || cardCat === currentCategory);
+            
+            // ¿Cumple el tag? (O está en 'populares/todos', o el juego es 'popular')
+            // Nota: Para simplificar, si estás en "Populares" mostramos todo, 
+            // si estás en "Nuevos" solo los nuevos, etc.
+            let matchTag = true;
+            if (currentTag !== 'all') {
+                matchTag = (cardTag === currentTag);
+            }
+
+            if (matchCat && matchTag) {
+                card.style.display = 'flex';
+                setTimeout(() => card.style.opacity = '1', 50);
+            } else {
+                card.style.display = 'none';
+                card.style.opacity = '0';
+            }
+        });
+    }
+
+    // Click en Categorías (Acción / Puzzle)
+    catButtons.forEach(btn => {
         btn.addEventListener('click', function() {
-            buttons.forEach(b => b.classList.remove('active'));
+            catButtons.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            const filterValue = this.getAttribute('data-filter');
-            cards.forEach(card => {
-                const cardCategory = card.getAttribute('data-category');
-                if (filterValue === 'all' || cardCategory === filterValue) {
-                    card.style.display = 'flex'; 
-                    setTimeout(() => card.style.opacity = '1', 50);
-                } else {
-                    card.style.display = 'none';
-                    card.style.opacity = '0';
-                }
-            });
+            currentCategory = this.getAttribute('data-filter');
+            
+            // Reseteamos el subfiltro visualmente para no confundir
+            subButtons.forEach(b => b.classList.remove('active'));
+            document.querySelector('.sub-filter[data-tag="all"]').classList.add('active');
+            currentTag = 'all';
+
+            filterGames();
+        });
+    });
+
+    // Click en Sub-menú (Nuevos / Clásicos)
+    subButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault(); // Evitar saltos raros
+            subButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentTag = this.getAttribute('data-tag');
+            filterGames();
+        });
+    });
+
+    // --- 3. SMOOTH SCROLL (Por si el CSS falla en algún navegador viejo) ---
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if(target) target.scrollIntoView({ behavior: 'smooth' });
         });
     });
 });
