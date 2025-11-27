@@ -9,9 +9,15 @@ html {
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
-    background-color: #050505; /* Fondo general muy oscuro */
+    /* Fondo base azul muy oscuro */
+    background-color: #0a0a12; 
+    /* Truco CSS para crear una rejilla (Grid) */
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px; /* Tamaño de los cuadros */
     color: #fff;
-    overflow-x: hidden; /* Evitar scroll horizontal */
+    overflow-x: hidden;
 }
 
 .container {
@@ -94,16 +100,14 @@ body {
 }
 
 /* Efecto de luz ambiental */
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: -100px; left: 50%;
-    transform: translateX(-50%);
-    width: 600px; height: 400px;
-    background: rgba(112, 0, 255, 0.15);
-    filter: blur(80px);
-    border-radius: 50%;
-    pointer-events: none;
+.hero-section {
+    /* Un degradado que va de morado oscuro a transparente */
+    background: radial-gradient(circle at center, rgba(40, 20, 60, 0.8) 0%, transparent 90%);
+    padding: 120px 0 90px 0;
+    text-align: center;
+    position: relative;
+    /* Borde sutil abajo para separar */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .hero-content {
