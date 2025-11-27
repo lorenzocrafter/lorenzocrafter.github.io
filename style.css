@@ -404,3 +404,15 @@ h2.rank-title {
 #userPhoto:hover {
     transform: scale(1.1) rotate(5deg);
 }
+/* Estado inicial invisible */
+.reveal {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.8s ease-out;
+}
+
+/* Estado visible */
+.reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+}
