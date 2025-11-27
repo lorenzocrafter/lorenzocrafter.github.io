@@ -26,35 +26,24 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #000 90%);
+            /* El fondo se define dinámicamente con JS */
+            background: #000;
             overflow: hidden;
+            transition: background 0.5s ease;
         }
 
-        /* Contenedor del juego con marco neón */
+        /* Contenedor del juego */
         #canvas-container {
             position: relative;
-            box-shadow: 0 0 30px rgba(0, 255, 242, 0.15);
-            border: 2px solid #333;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             overflow: hidden;
         }
 
         canvas {
             display: block;
-            background-color: #0a0a10;
-        }
-
-        /* Fondo animado de rejilla dentro del canvas */
-        #canvas-container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(rgba(0, 255, 242, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 242, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            pointer-events: none;
-            z-index: 0;
+            background-color: rgba(0, 0, 0, 0.3); /* Transparente para ver el fondo */
         }
 
         #ui-layer {
@@ -78,18 +67,22 @@
             z-index: 20;
         }
 
+        /* CAJAS DE MENSAJE (Inicio, GameOver, Tienda) */
         .msg-box {
-            background: rgba(0, 0, 0, 0.85);
-            padding: 30px 50px;
+            background: rgba(15, 10, 30, 0.95);
+            padding: 30px;
             border-radius: 20px;
-            border: 2px solid #00fff2;
+            border: 1px solid #00fff2;
             text-align: center;
-            box-shadow: 0 0 30px rgba(0, 255, 242, 0.3);
+            box-shadow: 0 0 40px rgba(0, 255, 242, 0.2);
             pointer-events: auto;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
+            width: 80%;
+            max-width: 320px;
         }
 
         h2 { color: #00fff2; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; }
+        h3 { color: #fff; margin: 15px 0 5px 0; font-size: 14px; text-transform: uppercase; }
         p { color: #aaa; margin: 0 0 20px 0; font-size: 14px; }
 
         button.play-btn {
@@ -103,8 +96,48 @@
             cursor: pointer;
             transition: transform 0.2s;
             box-shadow: 0 0 15px rgba(0, 255, 242, 0.5);
+            width: 100%;
+            margin-bottom: 10px;
         }
         button.play-btn:hover { transform: scale(1.05); }
+
+        button.secondary-btn {
+            background: transparent;
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 8px 20px;
+            font-size: 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button.secondary-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* ESTILOS DE LA TIENDA */
+        .shop-grid {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .shop-item {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .shop-item:hover { transform: scale(1.1); }
+        
+        .shop-item.selected {
+            border-color: #00fff2;
+            box-shadow: 0 0 10px #00fff2;
+        }
+        
+        /* Mini preview del color */
+        .color-dot { width: 100%; height: 100%; border-radius: 6px; }
 
     </style>
 </head>
@@ -135,14 +168,30 @@
             <div id="ui-layer">
                 <div id="start-screen" class="msg-box">
                     <h2>Neon Flappy</h2>
-                    <p>Usa ESPACIO o CLICK para volar</p>
+                    <p>Esquiva las tuberías</p>
                     <button class="play-btn" onclick="startGame()">JUGAR</button>
+                    <button class="secondary-btn" onclick="openShop()">PERSONALIZAR</button>
                 </div>
                 
                 <div id="game-over-screen" class="msg-box" style="display: none;">
                     <h2 style="color: #ff4757; text-shadow: 0 0 10px red;">GAME OVER</h2>
                     <p>Puntuación: <span id="final-score" style="color: #fff; font-weight: bold; font-size: 1.2em;">0</span></p>
                     <button class="play-btn" style="background: #ff4757; color: white; box-shadow: 0 0 15px rgba(255, 71, 87, 0.5);" onclick="resetGame()">REINTENTAR</button>
+                    <button class="secondary-btn" onclick="openShop()">TIENDA</button>
+                </div>
+
+                <div id="shop-screen" class="msg-box" style="display: none;">
+                    <h2 style="font-size: 20px;">PERSONALIZAR</h2>
+                    
+                    <h3>SKIN (Pájaro)</h3>
+                    <div class="shop-grid" id="skin-grid">
+                        </div>
+
+                    <h3>AMBIENTE (Fondo)</h3>
+                    <div class="shop-grid" id="bg-grid">
+                        </div>
+
+                    <button class="play-btn" style="margin-top: 15px;" onclick="closeShop()">LISTO</button>
                 </div>
             </div>
         </div>
@@ -154,9 +203,87 @@
         const scoreEl = document.getElementById('score-display');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
+        const shopScreen = document.getElementById('shop-screen');
         const finalScoreEl = document.getElementById('final-score');
+        const gameWrapper = document.getElementById('game-wrapper');
 
-        // Configuración de Audio (Sintetizador)
+        // --- SISTEMA DE PERSONALIZACIÓN ---
+        const SKINS = {
+            classic: { body: '#ffcc00', beak: '#ff6600', eye: '#fff' },
+            cyber:   { body: '#00fff2', beak: '#ff00ff', eye: '#000' },
+            toxic:   { body: '#39ff14', beak: '#1b1b1b', eye: '#ff0000' },
+            plasma:  { body: '#ff00ff', beak: '#00fff2', eye: '#fff' }
+        };
+
+        const BACKGROUNDS = {
+            space: 'radial-gradient(circle at center, #1a1a2e 0%, #000 90%)',
+            sunset: 'linear-gradient(to bottom, #2b1055, #7597de)',
+            matrix: 'linear-gradient(0deg, #000000 0%, #003300 100%)',
+            neon:   'linear-gradient(45deg, #111 0%, #222 100%)'
+        };
+
+        // Cargar datos guardados o usar defecto
+        let currentSkin = localStorage.getItem('flappySkin') || 'classic';
+        let currentBg = localStorage.getItem('flappyBg') || 'space';
+
+        // Aplicar fondo inicial
+        gameWrapper.style.background = BACKGROUNDS[currentBg];
+
+        // --- RENDERIZAR TIENDA ---
+        function renderShop() {
+            // Skins
+            const skinGrid = document.getElementById('skin-grid');
+            skinGrid.innerHTML = '';
+            Object.keys(SKINS).forEach(key => {
+                const div = document.createElement('div');
+                div.className = `shop-item ${key === currentSkin ? 'selected' : ''}`;
+                div.innerHTML = `<div class="color-dot" style="background: ${SKINS[key].body}"></div>`;
+                div.onclick = () => selectSkin(key);
+                skinGrid.appendChild(div);
+            });
+
+            // Fondos
+            const bgGrid = document.getElementById('bg-grid');
+            bgGrid.innerHTML = '';
+            Object.keys(BACKGROUNDS).forEach(key => {
+                const div = document.createElement('div');
+                div.className = `shop-item ${key === currentBg ? 'selected' : ''}`;
+                div.innerHTML = `<div class="color-dot" style="background: ${BACKGROUNDS[key]}"></div>`;
+                div.onclick = () => selectBg(key);
+                bgGrid.appendChild(div);
+            });
+        }
+
+        function selectSkin(key) {
+            currentSkin = key;
+            localStorage.setItem('flappySkin', key);
+            renderShop(); // Actualizar borde selección
+        }
+
+        function selectBg(key) {
+            currentBg = key;
+            localStorage.setItem('flappyBg', key);
+            gameWrapper.style.background = BACKGROUNDS[key];
+            renderShop();
+        }
+
+        function openShop() {
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            shopScreen.style.display = 'block';
+            renderShop();
+        }
+
+        function closeShop() {
+            shopScreen.style.display = 'none';
+            if(isGameOver) {
+                gameOverScreen.style.display = 'block';
+            } else {
+                startScreen.style.display = 'block';
+            }
+        }
+
+        // --- AUDIO (Sintetizador) ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
         
@@ -192,20 +319,16 @@
             }
         }
 
-        // Variables del Juego
+        // --- LÓGICA DEL JUEGO ---
         let frames = 0;
         let score = 0;
         let isRunning = false;
         let isGameOver = false;
         let loopId;
 
-        // Ajustar canvas (Móvil friendly)
         function resize() {
-            // Tamaño fijo estilo retro pero escalado
             canvas.width = 360;
             canvas.height = 640;
-            
-            // Escalar visualmente si la pantalla es pequeña
             const scale = Math.min(window.innerWidth / 360, (window.innerHeight - 80) / 640);
             if(window.innerWidth < 400) {
                 canvas.style.width = (360 * scale * 0.9) + 'px';
@@ -215,35 +338,35 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // EL PÁJARO (Pixel Art por código)
         const bird = {
             x: 50, y: 150, width: 34, height: 24,
             velocity: 0, gravity: 0.25, jump: 4.5,
-            frame: 0,
             draw: function() {
+                const colors = SKINS[currentSkin]; // Usar skin seleccionada
+
                 ctx.save();
                 ctx.translate(this.x + this.width/2, this.y + this.height/2);
-                // Rotación según velocidad
                 let rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
                 ctx.rotate(rotation);
 
-                // Cuerpo (Amarillo)
-                ctx.fillStyle = '#ffcc00';
+                // Cuerpo
+                ctx.fillStyle = colors.body;
                 ctx.fillRect(-17, -12, 34, 24);
-                // Ojo (Blanco y Negro)
-                ctx.fillStyle = '#fff';
+                // Ojo
+                ctx.fillStyle = colors.eye;
                 ctx.fillRect(2, -10, 12, 12);
                 ctx.fillStyle = '#000';
                 ctx.fillRect(8, -6, 4, 4);
-                // Pico (Naranja)
-                ctx.fillStyle = '#ff6600';
+                // Pico
+                ctx.fillStyle = colors.beak;
                 ctx.fillRect(10, 2, 14, 8);
                 // Ala (Blanca)
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.fillRect(-10, 0, 14, 10);
+                
                 // Borde neón sutil
-                ctx.strokeStyle = '#ffffaa';
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1;
                 ctx.strokeRect(-17, -12, 34, 24);
 
                 ctx.restore();
@@ -251,13 +374,10 @@
             update: function() {
                 this.velocity += this.gravity;
                 this.y += this.velocity;
-                
-                // Suelo
                 if (this.y + this.height >= canvas.height) {
                     this.y = canvas.height - this.height;
                     gameOver();
                 }
-                // Techo
                 if (this.y < 0) {
                     this.y = 0;
                     this.velocity = 0;
@@ -267,95 +387,60 @@
 
         const pipes = {
             items: [],
-            width: 50,
-            gap: 140, // Espacio para pasar
-            dx: 2, // Velocidad
+            width: 50, gap: 140, dx: 2,
             draw: function() {
                 this.items.forEach(p => {
-                    // Tubo Arriba (Degradado Neón)
                     let gradTop = ctx.createLinearGradient(p.x, 0, p.x + this.width, 0);
                     gradTop.addColorStop(0, '#00bfa5'); gradTop.addColorStop(0.5, '#a7ffeb'); gradTop.addColorStop(1, '#00bfa5');
                     ctx.fillStyle = gradTop;
                     ctx.fillRect(p.x, 0, this.width, p.top);
-                    // Borde inferior tubo arriba
                     ctx.fillStyle = '#004d40';
                     ctx.fillRect(p.x - 2, p.top - 20, this.width + 4, 20);
 
-                    // Tubo Abajo
                     let gradBot = ctx.createLinearGradient(p.x, 0, p.x + this.width, 0);
                     gradBot.addColorStop(0, '#00bfa5'); gradBot.addColorStop(0.5, '#a7ffeb'); gradBot.addColorStop(1, '#00bfa5');
                     ctx.fillStyle = gradBot;
                     ctx.fillRect(p.x, canvas.height - p.bottom, this.width, p.bottom);
-                    // Borde superior tubo abajo
                     ctx.fillStyle = '#004d40';
                     ctx.fillRect(p.x - 2, canvas.height - p.bottom, this.width + 4, 20);
                 });
             },
             update: function() {
-                // Generar tubos (cada 150 frames aprox)
                 if (frames % 150 === 0) {
                     let topHeight = Math.random() * (canvas.height - this.gap - 100) + 50;
                     let bottomHeight = canvas.height - this.gap - topHeight;
-                    this.items.push({
-                        x: canvas.width,
-                        top: topHeight,
-                        bottom: bottomHeight,
-                        passed: false
-                    });
+                    this.items.push({ x: canvas.width, top: topHeight, bottom: bottomHeight, passed: false });
                 }
-
                 this.items.forEach((p, i) => {
                     p.x -= this.dx;
-
-                    // Colisión
-                    if (
-                        bird.x + bird.width > p.x && 
-                        bird.x < p.x + this.width && 
-                        (bird.y < p.top || bird.y + bird.height > canvas.height - p.bottom)
-                    ) {
-                        gameOver();
-                    }
-
-                    // Puntuación
+                    if (bird.x + bird.width > p.x && bird.x < p.x + this.width && (bird.y < p.top || bird.y + bird.height > canvas.height - p.bottom)) gameOver();
                     if (p.x + this.width < bird.x && !p.passed) {
                         score++;
                         scoreEl.innerText = score;
                         p.passed = true;
                         playSound('score');
                     }
-
-                    // Eliminar si salen
-                    if (p.x + this.width < 0) {
-                        this.items.shift();
-                    }
+                    if (p.x + this.width < 0) this.items.shift();
                 });
             }
         };
 
-        // Loop Principal
         function loop() {
             if (!isRunning) return;
-            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Fondo animado simple (estrellas)
-            ctx.fillStyle = '#fff';
-            if(frames % 10 === 0) { /* parpadeo */ }
-            for(let i=0; i<10; i++) {
-                ctx.fillRect( (frames + i*50) % canvas.width, (i*60 + 20), 2, 2 );
-            }
+            // Estrellas de fondo sutiles
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            for(let i=0; i<10; i++) ctx.fillRect( (frames + i*50) % canvas.width, (i*60 + 20), 2, 2 );
 
             pipes.update();
             pipes.draw();
-            
             bird.update();
             bird.draw();
-
             frames++;
             loopId = requestAnimationFrame(loop);
         }
 
-        // Controles
         function jump() {
             if (!isRunning) return;
             bird.velocity = -bird.jump;
@@ -364,14 +449,10 @@
 
         function startGame() {
             startScreen.style.display = 'none';
-            score = 0;
-            scoreEl.innerText = 0;
-            bird.y = 150;
-            bird.velocity = 0;
-            pipes.items = [];
-            frames = 0;
-            isRunning = true;
-            isGameOver = false;
+            score = 0; scoreEl.innerText = 0;
+            bird.y = 150; bird.velocity = 0;
+            pipes.items = []; frames = 0;
+            isRunning = true; isGameOver = false;
             loop();
         }
 
@@ -387,14 +468,9 @@
             playSound('hit');
             finalScoreEl.innerText = score;
             gameOverScreen.style.display = 'block';
-
-            // --- GUARDAR EN FIREBASE (SI EXISTE EL SCRIPT) ---
-            if(window.guardarPuntaje) {
-                window.guardarPuntaje("Flappy Neon", score);
-            }
+            if(window.guardarPuntaje) window.guardarPuntaje("Flappy Neon", score);
         }
 
-        // Eventos
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 if(isGameOver && gameOverScreen.style.display !== 'none') resetGame();
@@ -402,21 +478,17 @@
                 else jump();
             }
         });
-        
         canvas.addEventListener('mousedown', (e) => {
             if(isGameOver) return;
-            if(!isRunning) startGame();
-            else jump();
+            if(!isRunning) startGame(); else jump();
         });
-        
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Evitar scroll
+            e.preventDefault();
             if(isGameOver) return;
-            if(!isRunning) startGame();
-            else jump();
+            if(!isRunning) startGame(); else jump();
         }, {passive: false});
 
-        // Dibujar frame inicial
+        // Dibujo inicial
         bird.draw();
 
     </script>
