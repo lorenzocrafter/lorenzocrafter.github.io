@@ -1,7 +1,7 @@
-// IMPORTAMOS FIREBASE
+// IMPORTAMOS FIREBASE (Nota: Ahora sí incluye addDoc)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, orderBy, limit, getDocs, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // TU CONFIGURACIÓN
 const firebaseConfig = {
@@ -24,7 +24,6 @@ window.guardarPuntaje = async (juego, puntos) => {
     const user = auth.currentUser;
     if (user) {
         const alias = localStorage.getItem('customAlias') || user.displayName;
-        // Prioridad: Avatar Custom > Foto Google
         const avatar = localStorage.getItem('customAvatar') || user.photoURL;
         
         const docId = `${user.uid}_${juego.replace(/\s/g, '')}`; 
@@ -38,7 +37,7 @@ window.guardarPuntaje = async (juego, puntos) => {
             }
             await setDoc(docRef, {
                 nombre: alias,
-                foto: avatar, // Guardamos la foto elegida
+                foto: avatar,
                 juego: juego,
                 puntos: puntos,
                 fecha: new Date(),
@@ -51,7 +50,7 @@ window.guardarPuntaje = async (juego, puntos) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- 1. USUARIO, ALIAS Y AVATAR ---
+    // --- 1. GESTIÓN DE USUARIO, ALIAS Y AVATAR ---
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userInfo = document.getElementById('userInfo');
@@ -59,30 +58,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const userName = document.getElementById('userName');
     const editNameBtn = document.getElementById('editNameBtn');
     
-    // Modal
     const aliasModal = document.getElementById('aliasModal');
     const newAliasInput = document.getElementById('newAliasInput');
     const saveAliasBtn = document.getElementById('saveAliasBtn');
     const cancelAliasBtn = document.getElementById('cancelAliasBtn');
     
-    // Avatares
     const avatarOptions = document.querySelectorAll('.avatar-option');
     const googleAvatarOption = document.getElementById('googleAvatarOption');
-    let selectedAvatarUrl = null; // Variable temporal para el modal
+    let selectedAvatarUrl = null;
 
     function updateProfileUI(user) {
         const storedAlias = localStorage.getItem('customAlias');
         const storedAvatar = localStorage.getItem('customAvatar');
-        
-        // Texto
         userName.innerText = storedAlias || user.displayName.split(' ')[0];
-        // Imagen
         userPhoto.src = storedAvatar || user.photoURL;
-        
-        // Preparar opción de Google en el modal
         if(googleAvatarOption) {
             googleAvatarOption.src = user.photoURL;
-            googleAvatarOption.dataset.src = user.photoURL; // Guardamos la URL real
+            googleAvatarOption.dataset.src = user.photoURL;
         }
     }
 
@@ -91,21 +83,16 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', () => { 
             signOut(auth).then(() => { 
                 localStorage.removeItem('bloxUsername');
-                // No borramos customAlias/Avatar para que persistan en el navegador
                 location.reload(); 
             }); 
         });
 
-        // ABRIR MODAL
         if(editNameBtn) {
             editNameBtn.addEventListener('click', () => {
                 aliasModal.style.display = 'flex';
                 newAliasInput.value = userName.innerText;
-                
-                // Resaltar avatar actual
                 const current = localStorage.getItem('customAvatar') || auth.currentUser.photoURL;
-                selectedAvatarUrl = current; // Iniciar con el actual
-                
+                selectedAvatarUrl = current;
                 avatarOptions.forEach(img => {
                     img.classList.remove('selected');
                     if(img.dataset.src === current || (img.id === 'googleAvatarOption' && !localStorage.getItem('customAvatar'))) {
@@ -115,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // SELECCIONAR AVATAR (Click en las caritas)
         avatarOptions.forEach(img => {
             img.addEventListener('click', () => {
                 avatarOptions.forEach(i => i.classList.remove('selected'));
@@ -124,22 +110,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // GUARDAR TODO
         if(saveAliasBtn) {
             saveAliasBtn.addEventListener('click', () => {
                 const newName = newAliasInput.value.trim();
-                
                 if(newName.length > 0 && newName.length <= 12) {
-                    // Guardar Nombre
                     localStorage.setItem('customAlias', newName);
                     userName.innerText = newName;
-                    
-                    // Guardar Avatar
                     if(selectedAvatarUrl) {
                         localStorage.setItem('customAvatar', selectedAvatarUrl);
                         userPhoto.src = selectedAvatarUrl;
                     }
-
                     aliasModal.style.display = 'none';
                 } else alert("Nombre inválido.");
             });
@@ -158,7 +138,76 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 2. RANKING ---
+    // --- 2. CHAT GLOBAL (Con Avatares) ---
+    const chatToggle = document.getElementById('chatToggleBtn');
+    const chatContainer = document.getElementById('chatContainer');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const messagesBox = document.getElementById('chatMessages');
+
+    if(chatToggle) {
+        chatToggle.addEventListener('click', () => chatContainer.classList.add('open'));
+        closeChatBtn.addEventListener('click', () => chatContainer.classList.remove('open'));
+
+        const sendMessage = async () => {
+            const text = chatInput.value.trim();
+            const user = auth.currentUser;
+            
+            if(!user) { alert("Debes iniciar sesión para chatear."); return; }
+            if(text === "") return;
+
+            const alias = localStorage.getItem('customAlias') || user.displayName.split(' ')[0];
+            const avatar = localStorage.getItem('customAvatar') || user.photoURL;
+
+            try {
+                // Ahora guardamos también la foto en el mensaje
+                await addDoc(collection(db, "chat"), {
+                    usuario: alias,
+                    foto: avatar,
+                    mensaje: text,
+                    timestamp: serverTimestamp()
+                });
+                chatInput.value = "";
+            } catch(e) { console.error("Error chat:", e); }
+        };
+
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        const qChat = query(collection(db, "chat"), orderBy("timestamp", "desc"), limit(20));
+        onSnapshot(qChat, (snapshot) => {
+            messagesBox.innerHTML = '';
+            const msgs = [];
+            snapshot.forEach(doc => msgs.push(doc.data()));
+            msgs.reverse();
+
+            msgs.forEach(data => {
+                if(!data.timestamp) return;
+                const isMine = auth.currentUser && (localStorage.getItem('customAlias') === data.usuario || auth.currentUser.displayName.includes(data.usuario));
+                
+                // HTML del mensaje con Avatar
+                const div = document.createElement('div');
+                div.className = `message ${isMine ? 'mine' : ''}`;
+                // Usamos un avatar por defecto si el mensaje es viejo y no tiene foto
+                const userImg = data.foto || "https://api.dicebear.com/9.x/avataaars/svg?seed=Ghost";
+                
+                div.innerHTML = `
+                    <div style="display:flex; align-items:flex-start; gap:5px; margin-bottom:5px;">
+                        <img src="${userImg}" style="width:20px; height:20px; border-radius:50%; margin-top:2px;">
+                        <div>
+                            <span class="msg-user">${data.usuario}:</span> 
+                            <span class="msg-content">${data.mensaje}</span>
+                        </div>
+                    </div>
+                `;
+                messagesBox.appendChild(div);
+            });
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        });
+    }
+
+    // --- 3. RANKING ---
     const tablaRanking = document.getElementById('tabla-ranking-body');
     const rankTabs = document.querySelectorAll('.rank-tab');
 
@@ -184,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = doc.data();
                 let rankIcon = `#${posicion}`;
                 if(posicion === 1) rankIcon = "🥇"; if(posicion === 2) rankIcon = "🥈"; if(posicion === 3) rankIcon = "🥉";
-                const fila = `<tr><td class="player-rank" style="font-size:1.2em;">${rankIcon}</td><td style="display:flex; align-items:center; gap:10px;"><img src="${data.foto}" style="width:30px; height:30px; border-radius:50%; border:2px solid #333; object-fit:cover;">${data.nombre}</td><td style="color:#aaa;">${data.juego}</td><td class="player-score" style="color:${posicion===1 ? '#00fff2' : '#fff'}">${data.puntos}</td></tr>`;
+                const fila = `<tr><td class="player-rank" style="font-size:1.2em;">${rankIcon}</td><td style="display:flex; align-items:center; gap:10px;"><img src="${data.foto}" style="width:24px; height:24px; border-radius:50%; border:1px solid #555;">${data.nombre}</td><td style="color:#aaa;">${data.juego}</td><td class="player-score" style="color:${posicion===1 ? '#00fff2' : '#fff'}">${data.puntos}</td></tr>`;
                 tablaRanking.innerHTML += fila;
                 posicion++;
             });
@@ -192,8 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error(error); tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4757;">⚠️ Error al cargar.</td></tr>`; }
     }
 
-    // --- 3. UI, FILTROS, CHAT (El resto del código se mantiene) ---
-    // (Pego el resto aquí para que esté completo)
+    // --- 4. UI Y FILTROS ---
     const searchInput = document.getElementById('searchInput');
     const buttons = document.querySelectorAll('.category-buttons .btn');
     const subButtons = document.querySelectorAll('.sub-filter');
@@ -231,36 +279,4 @@ document.addEventListener('DOMContentLoaded', () => {
         osc.start(); osc.stop(uiAudioCtx.currentTime + 0.05);
     };
     document.querySelectorAll('.game-card, .btn, .nav-links a, .sub-filter, .rank-tab').forEach(el => el.addEventListener('mouseenter', playHoverSound));
-
-    // CHAT (Con soporte para avatar custom)
-    const chatToggle = document.getElementById('chatToggleBtn');
-    const chatContainer = document.getElementById('chatContainer');
-    const closeChatBtn = document.getElementById('closeChatBtn');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const messagesBox = document.getElementById('chatMessages');
-
-    if(chatToggle) {
-        chatToggle.addEventListener('click', () => chatContainer.classList.add('open'));
-        closeChatBtn.addEventListener('click', () => chatContainer.classList.remove('open'));
-        const sendMessage = async () => {
-            const text = chatInput.value.trim(); const user = auth.currentUser;
-            if(!user) { alert("Debes iniciar sesión."); return; } if(text === "") return;
-            const alias = localStorage.getItem('customAlias') || user.displayName.split(' ')[0];
-            try { await addDoc(collection(db, "chat"), { usuario: alias, mensaje: text, timestamp: serverTimestamp() }); chatInput.value = ""; } catch(e) { console.error(e); }
-        };
-        sendBtn.addEventListener('click', sendMessage); chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
-        const qChat = query(collection(db, "chat"), orderBy("timestamp", "desc"), limit(20));
-        onSnapshot(qChat, (snapshot) => {
-            messagesBox.innerHTML = ''; const msgs = []; snapshot.forEach(doc => msgs.push(doc.data())); msgs.reverse();
-            msgs.forEach(data => {
-                if(!data.timestamp) return; 
-                const isMine = auth.currentUser && (localStorage.getItem('customAlias') === data.usuario || auth.currentUser.displayName.includes(data.usuario));
-                const div = document.createElement('div'); div.className = `message ${isMine ? 'mine' : ''}`;
-                div.innerHTML = `<span class="msg-user">${data.usuario}:</span> <span class="msg-content">${data.mensaje}</span>`;
-                messagesBox.appendChild(div);
-            });
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-        });
-    }
 });
