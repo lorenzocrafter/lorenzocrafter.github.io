@@ -153,12 +153,153 @@
 
             const spellBest = localStorage.getItem('spellHighScore') || 0;
             document.getElementById('spell-score').innerText = spellBest;
+            <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking | B-BOX Games</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505">
+    <style>
+        .ranking-wrapper {
+            padding-top: 40px; 
+            padding-bottom: 60px;
+            min-height: 80vh;
+        }
+        
+        /* ESTILOS DE PESTAÑAS (TABS) */
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto; /* Scroll en móvil */
+            padding-bottom: 5px;
+            justify-content: center;
+        }
+
+        .rank-tab {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #aaa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .rank-tab:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .rank-tab.active {
+            background: #00fff2;
+            color: #000;
+            border-color: #00fff2;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <a href="index.html" class="logo-text">B-BOX <span>GAMES</span></a>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html">Inicio</a>
+                <a href="index.html#juegos">Juegos</a>
+                <a href="#" class="active">Ranking</a>
+                
+                <div id="user-area" style="display: inline-block; margin-left: 20px;">
+                    <button id="loginBtn" class="btn" style="background: linear-gradient(45deg, #4285F4, #34A853); border:none; padding: 8px 20px; font-weight:bold; border-radius: 20px; color: white; cursor: pointer;">
+                        Ingresar
+                    </button>
+                    <div id="userInfo" style="display: none; align-items: center; gap: 10px;">
+                        <img id="userPhoto" src="" alt="User" style="width: 35px; height: 35px; border-radius: 50%; border: 2px solid #00fff2; box-shadow: 0 0 10px #00fff2;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
+                            <span id="userName" style="color: #fff; font-weight: 600; font-size: 14px;"></span>
+                            <button id="editNameBtn" class="edit-name-btn" style="padding: 0; font-size: 11px; margin-top: 2px;">✎ Cambiar Alias</button>
+                        </div>
+                        <button id="logoutBtn" style="background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff4757; padding: 4px 10px; border-radius: 6px; cursor: pointer; margin-left: 10px;">✕</button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container ranking-wrapper">
+        <div class="ranking-container">
+            <h2 class="rank-title">🏆 SALÓN DE LA FAMA</h2>
+
+            <div class="my-stats">
+                <h3 style="margin-top:0; color:#fff; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:10px;">
+                    Tus Récords Personales (Local)
+                </h3>
+                <div class="stat-row"><span class="stat-game">Chrono-Echo DX</span><span class="stat-val" id="chrono-score">0</span></div>
+                <div class="stat-row"><span class="stat-game">Spell Caster</span><span class="stat-val" id="spell-score">0</span></div>
+                <div class="stat-row"><span class="stat-game">Crossy Road</span><span class="stat-val" id="crossy-score">0</span></div>
+            </div>
+
+            <h3 style="color:#888; margin-bottom:15px; text-align: center; text-transform: uppercase; letter-spacing: 1px;">Top 10 Mundial</h3>
             
+            <div class="tabs-container">
+                <button class="rank-tab active" data-game="Chrono-Echo">Chrono-Echo</button>
+                <button class="rank-tab" data-game="Crossy Road">Crossy Road</button>
+                <button class="rank-tab" data-game="Flappy Neon">Flappy Neon</button>
+                <button class="rank-tab" data-game="Spell Caster">Spell Caster</button>
+            </div>
+
+            <table class="score-board">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Jugador</th>
+                        <th>Juego</th>
+                        <th style="text-align: right;">Puntuación</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-ranking-body">
+                    <tr><td colspan="4" style="text-align: center; padding: 30px; color: #666;">Selecciona un juego...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="aliasModal" class="modal-overlay">
+        <div class="modal-content" style="border: 1px solid #7000ff; box-shadow: 0 0 40px rgba(112, 0, 255, 0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 30px;">
+            <h3 style="color: #fff; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Nuevo Gamertag</h3>
+            <p style="color: #aaa; font-size: 14px; margin: 0 0 25px 0;">Escribe el nombre con el que aparecerás en el Ranking.</p>
+            <input type="text" id="newAliasInput" class="search-input" style="width: 85%; text-align: center; margin-bottom: 25px; font-weight: bold; color: #00fff2; font-size: 18px; padding: 12px; box-sizing: border-box;" placeholder="Ej: CyberWolf..." maxlength="12" autocomplete="off">
+            <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
+                <button id="cancelAliasBtn" class="btn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #555; color: #ccc; padding: 10px 0; border-radius: 10px; max-width: 120px;">Cancelar</button>
+                <button id="saveAliasBtn" class="btn" style="flex: 1; background: linear-gradient(45deg, #7000ff, #a000ff); border: none; color: white; padding: 10px 0; border-radius: 10px; font-weight: bold; box-shadow: 0 0 15px rgba(112,0,255,0.4); max-width: 120px;">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 40px; color: #444; font-size: 0.8rem;">
+        &copy; 2025 B-BOX Games.
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chronoBest = localStorage.getItem('chronoHighScore') || 0;
+            document.getElementById('chrono-score').innerText = chronoBest;
+            const spellBest = localStorage.getItem('spellHighScore') || 0;
+            document.getElementById('spell-score').innerText = spellBest;
             const crossyBest = localStorage.getItem('crossyHighScore') || 0;
             document.getElementById('crossy-score').innerText = crossyBest;
         });
     </script>
-    
     <script type="module" src="script.js"></script>
 
 </body>
