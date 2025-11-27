@@ -16,14 +16,12 @@
             </div>
             <nav class="nav-links">
                 <a href="#" class="active">Inicio</a>
-                <a href="#juegos">Juegos</a>
-                <a href="ranking.html">Ranking</a>
+                <a href="#juegos">Juegos</a> <a href="ranking.html">Ranking</a>
                 
                 <div id="user-area" style="display: inline-block; margin-left: 20px;">
                     <button id="loginBtn" class="btn" style="background: #4285F4; padding: 5px 15px; font-size: 14px; border:none; color:white; cursor:pointer; border-radius:4px;">
                         G Iniciar Sesión
                     </button>
-
                     <div id="userInfo" style="display: none; align-items: center; gap: 10px;">
                         <img id="userPhoto" src="" alt="User" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #00fff2;">
                         <span id="userName" style="color: #fff; font-size: 14px;"></span>
@@ -50,9 +48,9 @@
 
         <div class="section-header">
             <nav class="subsection-nav">
-                <a href="#" class="active">Populares</a>
-                <a href="#">Nuevos</a>
-                <a href="#">Clásicos</a>
+                <a href="javascript:void(0)" class="sub-filter active" data-tag="all">Populares</a>
+                <a href="javascript:void(0)" class="sub-filter" data-tag="nuevo">Nuevos</a>
+                <a href="javascript:void(0)" class="sub-filter" data-tag="clasico">Clásicos</a>
             </nav>
             <div class="header-icons">
                 <span class="icon">&#9776;</span>
@@ -64,27 +62,27 @@
         
         <div class="game-cards">
             
-            <div class="game-card" data-category="accion" onclick="window.location.href='crossy_road.html'">
+            <div class="game-card" data-category="accion" data-tag="clasico" onclick="window.location.href='crossy_road.html'">
                 <img src="portada_crossy_road.jpg" alt="Neon Crossy Road">
                 <div class="card-info">
                     <h3>Crossy Road</h3>
-                    <span>Arcade</span>
+                    <span>Clásico Arcade</span>
                 </div>
             </div>
             
-            <div class="game-card" data-category="puzzle" onclick="window.location.href='spell_caster.html'">
+            <div class="game-card" data-category="puzzle" data-tag="popular" onclick="window.location.href='spell_caster.html'">
                 <img src="portada_spell_caster.jpg" alt="Spell Caster">
                 <div class="card-info">
                     <h3>Spell Caster</h3>
-                    <span>Mental</span>
+                    <span>Popular</span>
                 </div>
             </div>
             
-            <div class="game-card" data-category="accion" onclick="window.location.href='chrono_echo.html'">
+            <div class="game-card" data-category="accion" data-tag="nuevo" onclick="window.location.href='chrono_echo.html'">
                 <img src="portada_chrono.jpg" alt="Chrono Echo">
                 <div class="card-info">
                     <h3>Chrono-Echo</h3>
-                    <span>Shooter</span>
+                    <span style="color:#00fff2">★ NUEVO</span>
                 </div>
             </div>
 
