@@ -100,6 +100,14 @@
             background-color: #ff2222;
         }
 
+        /* Botón para volver al menú */
+        #menu-btn {
+            background-color: #444 !important;
+            margin-top: 10px !important;
+            font-size: 0.6em !important;
+            padding: 10px 20px !important;
+        }
+
         #youtube, #youtube-card {
             display: none;
         }
@@ -125,6 +133,7 @@
             <h1>Game Over</h1>
             <p>Score: <span id="final-score"></span></p>
             <button id="retry">Reintentar</button>
+            <button id="menu-btn" onclick="window.location.href='index.html'">Volver al Menú</button>
         </div>
     </div>
 
@@ -622,6 +631,7 @@
             else if (event.key === "ArrowRight") { event.preventDefault(); queueMove("right"); }
         });
 
+        // --- COLISIONES Y GUARDADO DE PUNTAJE ---
         function hitTest() {
             const row = metadata[position.currentRow - 1];
             if (!row) return;
@@ -632,8 +642,25 @@
                     if (!ref) throw Error("Vehicle reference is missing");
                     const vehicleBoundingBox = new THREE.Box3();
                     vehicleBoundingBox.setFromObject(ref);
+                    
                     if (playerBoundingBox.intersectsBox(vehicleBoundingBox)) {
                         if (!resultDOM || !finalScoreDOM) return;
+                        
+                        // Si ya es visible, no guardamos de nuevo para evitar duplicados
+                        if (resultDOM.style.visibility === "visible") return;
+
+                        // --- AQUÍ GUARDAMOS EN LA NUBE ---
+                        if (window.guardarPuntaje) {
+                            window.guardarPuntaje("Crossy Road", position.currentRow);
+                        }
+                        
+                        // Guardar también en Local Storage por si acaso
+                        const currentMax = localStorage.getItem('crossyHighScore') || 0;
+                        if(position.currentRow > currentMax) {
+                            localStorage.setItem('crossyHighScore', position.currentRow);
+                        }
+                        // ---------------------------------
+
                         resultDOM.style.visibility = "visible";
                         finalScoreDOM.innerText = position.currentRow.toString();
                     }
@@ -675,5 +702,8 @@
             renderer.render(scene, camera);
         }
     </script>
+    
+    <script type="module" src="script.js"></script>
+    
 </body>
 </html>
