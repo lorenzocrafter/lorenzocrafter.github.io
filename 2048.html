@@ -2,17 +2,94 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2048 | B-BOX Games</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #000; }
-        .game-frame {
-            flex-grow: 1;
-            border: none;
+        /* ESTILOS DEL JUEGO 2048 */
+        body {
+            background-color: #050505;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Ajuste del Navbar para que no moleste */
+        .navbar {
             width: 100%;
-            height: 100%;
+            flex-shrink: 0;
+        }
+
+        #game-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        #game-board {
+            width: 350px;
+            height: 350px;
+            background-color: #1a1a2e;
+            border-radius: 10px;
+            border: 5px solid #00fff2;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            padding: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 242, 0.2);
+        }
+
+        .tile {
+            background-color: #2b1b3f;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            font-weight: bold;
+            color: #fff;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        /* Colores según el número */
+        .tile[data-val="2"] { background: #44325e; color: #fff; }
+        .tile[data-val="4"] { background: #5d437e; color: #fff; }
+        .tile[data-val="8"] { background: #7000ff; color: #fff; box-shadow: 0 0 10px #7000ff; }
+        .tile[data-val="16"] { background: #00fff2; color: #000; box-shadow: 0 0 10px #00fff2; }
+        .tile[data-val="32"] { background: #ff4757; color: #fff; box-shadow: 0 0 15px #ff4757; }
+        .tile[data-val="64"] { background: #ffa502; color: #000; }
+        .tile[data-val="128"], .tile[data-val="256"], .tile[data-val="512"] { 
+            background: #ffeaa7; color: #000; box-shadow: 0 0 20px yellow; font-size: 24px;
+        }
+        .tile[data-val="1024"], .tile[data-val="2048"] { 
+            background: #fff; color: #000; box-shadow: 0 0 30px white; font-size: 20px;
+        }
+
+        .score-box {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 20px;
+            font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .score-box span { color: #00fff2; }
+
+        .controls-hint {
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -21,16 +98,13 @@
     <header class="navbar">
         <div class="container">
             <div class="logo">
-                <a href="index.html" class="logo-text">
-                    B-BOX <span>GAMES</span>
-                </a>
+                <a href="index.html" class="logo-text">B-BOX <span>GAMES</span></a>
             </div>
             <nav class="nav-links">
-                <a href="index.html">Volver al Menú</a>
-                
+                <a href="index.html">Volver</a>
                 <div id="user-area" style="display: inline-block; margin-left: 20px;">
                     <div id="userInfo" style="display: none; align-items: center; gap: 10px;">
-                        <img id="userPhoto" src="" alt="User" style="width: 35px; height: 35px; border-radius: 50%; border: 2px solid #00fff2;">
+                        <img id="userPhoto" src="" alt="User" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #00fff2;">
                         <span id="userName" style="color: #fff; font-weight: 600;"></span>
                     </div>
                 </div>
@@ -38,7 +112,159 @@
         </div>
     </header>
 
-    <iframe src="https://play2048.co/" class="game-frame" allowfullscreen></iframe>
+    <div id="game-wrapper">
+        <div class="score-box">Puntos: <span id="score">0</span></div>
+        <div id="game-board"></div>
+        <p class="controls-hint">Usa FLECHAS o desliza el dedo</p>
+        <button onclick="initGame()" style="margin-top: 10px; background:transparent; border:1px solid #666; color:#666; padding:5px 10px; cursor:pointer;">Reiniciar</button>
+    </div>
+
+    <script>
+        const board = document.getElementById('game-board');
+        const scoreDisplay = document.getElementById('score');
+        const size = 4;
+        let tiles = [];
+        let score = 0;
+
+        function initGame() {
+            board.innerHTML = '';
+            tiles = Array(size * size).fill(0);
+            score = 0;
+            updateScore(0);
+            createBoard();
+            spawnTile();
+            spawnTile();
+            drawBoard();
+        }
+
+        function createBoard() {
+            for (let i = 0; i < size * size; i++) {
+                let tile = document.createElement('div');
+                tile.classList.add('tile');
+                board.appendChild(tile);
+            }
+        }
+
+        function drawBoard() {
+            const tileDivs = document.querySelectorAll('.tile');
+            tiles.forEach((val, i) => {
+                tileDivs[i].innerText = val > 0 ? val : '';
+                tileDivs[i].setAttribute('data-val', val);
+            });
+        }
+
+        function spawnTile() {
+            let emptyTiles = tiles.map((val, i) => val === 0 ? i : null).filter(val => val !== null);
+            if (emptyTiles.length === 0) return;
+            let randomTile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+            tiles[randomTile] = Math.random() > 0.9 ? 4 : 2;
+        }
+
+        function updateScore(val) {
+            score += val;
+            scoreDisplay.innerText = score;
+        }
+
+        // Lógica de movimiento
+        function move(direction) {
+            let moved = false;
+            
+            // Convertir a filas o columnas según dirección
+            // (Simplificado para chat: Lógica básica de deslizamiento)
+            // Esta es una implementación compacta del algoritmo 2048
+            
+            const rotateBoard = (times) => {
+                const newTiles = Array(16).fill(0);
+                for(let i=0; i<4; i++) {
+                    for(let j=0; j<4; j++) {
+                        // Rotación de matriz 90 grados
+                        let oldIndex = i * 4 + j;
+                        let newIndex; 
+                        if (times === 1) newIndex = j * 4 + (3 - i); // 90
+                        if (times === 2) newIndex = (3 - i) * 4 + (3 - j); // 180
+                        if (times === 3) newIndex = (3 - j) * 4 + i; // 270
+                        if (times === 0) newIndex = oldIndex;
+                        newTiles[newIndex] = tiles[oldIndex];
+                    }
+                }
+                tiles = newTiles;
+            };
+
+            // Rotar para que siempre procesemos como "Mover a la Izquierda"
+            if (direction === 'up') rotateBoard(3); // Rotar 270 (Up -> Left)
+            if (direction === 'right') rotateBoard(2); // Rotar 180 (Right -> Left)
+            if (direction === 'down') rotateBoard(1); // Rotar 90 (Down -> Left)
+
+            // Procesar filas a la izquierda
+            for (let i = 0; i < 4; i++) {
+                let row = tiles.slice(i * 4, i * 4 + 4);
+                let filteredRow = row.filter(num => num); // Quitar ceros
+                
+                // Combinar
+                for (let j = 0; j < filteredRow.length - 1; j++) {
+                    if (filteredRow[j] === filteredRow[j + 1]) {
+                        filteredRow[j] *= 2;
+                        updateScore(filteredRow[j]);
+                        filteredRow.splice(j + 1, 1);
+                    }
+                }
+                
+                // Rellenar ceros
+                while (filteredRow.length < 4) filteredRow.push(0);
+                
+                // Verificar si hubo cambio
+                if (row.join(',') !== filteredRow.join(',')) moved = true;
+                
+                // Guardar
+                for (let j = 0; j < 4; j++) tiles[i * 4 + j] = filteredRow[j];
+            }
+
+            // Rotar de vuelta a la posición original
+            if (direction === 'up') rotateBoard(1); // +90 = 360 (0)
+            if (direction === 'right') rotateBoard(2); // +180 = 360
+            if (direction === 'down') rotateBoard(3); // +270 = 360
+
+            if (moved) {
+                spawnTile();
+                drawBoard();
+            }
+        }
+
+        // Controles Teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') move('left');
+            if (e.key === 'ArrowRight') move('right');
+            if (e.key === 'ArrowUp') move('up');
+            if (e.key === 'ArrowDown') move('down');
+        });
+
+        // Controles Táctiles (Móvil)
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        board.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, {passive: false});
+
+        board.addEventListener('touchend', e => {
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            let dx = touchEndX - touchStartX;
+            let dy = touchEndY - touchStartY;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0) move('right'); else move('left');
+            } else {
+                if (dy > 0) move('down'); else move('up');
+            }
+            e.preventDefault();
+        }, {passive: false});
+
+        // Arrancar
+        initGame();
+
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
