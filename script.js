@@ -19,41 +19,29 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// --- FUNCIÓN INTELIGENTE: SOLO GUARDA SI ES RÉCORD ---
+// GUARDAR PUNTOS (Con lógica de Alias y Récord)
 window.guardarPuntaje = async (juego, puntos) => {
     const user = auth.currentUser;
     if (user) {
         const alias = localStorage.getItem('customAlias') || user.displayName;
-        
-        // Creamos un ID único: "IDUsuario_NombreJuego"
-        // Así evitamos duplicados. Solo puede haber UNA entrada por juego para este usuario.
         const docId = `${user.uid}_${juego.replace(/\s/g, '')}`; 
         const docRef = doc(db, "puntuaciones", docId);
 
         try {
-            // 1. Revisamos si ya tiene un récord
             const docSnap = await getDoc(docRef);
-
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                // Si el puntaje nuevo es MENOR o IGUAL al viejo, NO hacemos nada.
-                if (puntos <= data.puntos) {
-                    console.log(`No es récord. Actual: ${data.puntos} vs Nuevo: ${puntos}`);
-                    return; 
-                }
+                if (puntos <= data.puntos) return; 
             }
-
-            // 2. Si llegamos aquí, es un Nuevo Récord -> Guardamos/Sobrescribimos
             await setDoc(docRef, {
                 nombre: alias,
                 foto: user.photoURL,
                 juego: juego,
                 puntos: puntos,
                 fecha: new Date(),
-                uid: user.uid // Guardamos ID para referencias futuras
+                uid: user.uid
             });
-            console.log(`¡NUEVO RÉCORD GUARDADO! ${juego}: ${puntos}`);
-
+            console.log(`Récord guardado para ${alias}: ${puntos}`);
         } catch (e) {
             console.error("Error al guardar:", e);
         }
@@ -62,7 +50,7 @@ window.guardarPuntaje = async (juego, puntos) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- 1. GESTIÓN DE USUARIO ---
+    // --- 1. GESTIÓN DE USUARIO Y ALIAS ---
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userInfo = document.getElementById('userInfo');
@@ -70,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const userName = document.getElementById('userName');
     const editNameBtn = document.getElementById('editNameBtn');
     
-    // Modal Elementos
     const aliasModal = document.getElementById('aliasModal');
     const newAliasInput = document.getElementById('newAliasInput');
     const saveAliasBtn = document.getElementById('saveAliasBtn');
@@ -83,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(loginBtn) {
         loginBtn.addEventListener('click', () => signInWithPopup(auth, provider).catch(e => alert(e.message)));
-        
         logoutBtn.addEventListener('click', () => {
             signOut(auth).then(() => { localStorage.removeItem('bloxUsername'); location.reload(); });
         });
@@ -95,16 +81,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        saveAliasBtn.addEventListener('click', () => {
-            const newName = newAliasInput.value.trim();
-            if(newName.length > 0 && newName.length <= 12) {
-                localStorage.setItem('customAlias', newName);
-                userName.innerText = newName;
-                aliasModal.style.display = 'none';
-            } else alert("Nombre inválido.");
-        });
+        if(saveAliasBtn) {
+            saveAliasBtn.addEventListener('click', () => {
+                const newName = newAliasInput.value.trim();
+                if(newName.length > 0 && newName.length <= 12) {
+                    localStorage.setItem('customAlias', newName);
+                    userName.innerText = newName;
+                    aliasModal.style.display = 'none';
+                } else alert("Nombre inválido.");
+            });
+        }
 
-        cancelAliasBtn.addEventListener('click', () => aliasModal.style.display = 'none');
+        if(cancelAliasBtn) cancelAliasBtn.addEventListener('click', () => aliasModal.style.display = 'none');
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -120,85 +108,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 2. RANKING POR PESTAÑAS ---
+    // --- 2. RANKING ---
     const tablaRanking = document.getElementById('tabla-ranking-body');
     const rankTabs = document.querySelectorAll('.rank-tab');
 
     if (tablaRanking) {
-        // Cargar el primer juego por defecto (El que tenga la clase active)
         const defaultGame = document.querySelector('.rank-tab.active').getAttribute('data-game');
         cargarRanking(defaultGame);
 
-        // Eventos de Click en las pestañas
         rankTabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                // Cambiar estilo visual
                 rankTabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                
-                // Cargar datos del juego seleccionado
-                const gameName = tab.getAttribute('data-game');
-                cargarRanking(gameName);
+                cargarRanking(tab.getAttribute('data-game'));
             });
         });
     }
 
     async function cargarRanking(juegoSeleccionado) {
         tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#888;">Cargando Top de ${juegoSeleccionado}... ⏳</td></tr>`;
-        
         try {
-            // Consulta Filtrada: Solo este juego, ordenado por puntos
-            const q = query(
-                collection(db, "puntuaciones"), 
-                where("juego", "==", juegoSeleccionado),
-                orderBy("puntos", "desc"), 
-                limit(10)
-            );
-            
+            const q = query(collection(db, "puntuaciones"), where("juego", "==", juegoSeleccionado), orderBy("puntos", "desc"), limit(10));
             const querySnapshot = await getDocs(q);
-            
             tablaRanking.innerHTML = ""; 
             let posicion = 1;
-            
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                // Medalla para los top 3
                 let rankIcon = `#${posicion}`;
                 if(posicion === 1) rankIcon = "🥇";
                 if(posicion === 2) rankIcon = "🥈";
                 if(posicion === 3) rankIcon = "🥉";
 
-                const fila = `
-                    <tr>
-                        <td class="player-rank" style="font-size:1.2em;">${rankIcon}</td>
-                        <td style="display:flex; align-items:center; gap:10px;">
-                            <img src="${data.foto}" style="width:24px; height:24px; border-radius:50%; border:1px solid #555;">
-                            ${data.nombre}
-                        </td>
-                        <td style="color:#aaa;">${data.juego}</td>
-                        <td class="player-score" style="color:${posicion===1 ? '#00fff2' : '#fff'}">${data.puntos}</td>
-                    </tr>
-                `;
+                const fila = `<tr><td class="player-rank" style="font-size:1.2em;">${rankIcon}</td><td style="display:flex; align-items:center; gap:10px;"><img src="${data.foto}" style="width:24px; height:24px; border-radius:50%; border:1px solid #555;">${data.nombre}</td><td style="color:#aaa;">${data.juego}</td><td class="player-score" style="color:${posicion===1 ? '#00fff2' : '#fff'}">${data.puntos}</td></tr>`;
                 tablaRanking.innerHTML += fila;
                 posicion++;
             });
-
-            if(querySnapshot.empty) {
-                tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">Nadie ha jugado a ${juegoSeleccionado} aún. <br>¡Sé el primero!</td></tr>`;
-            }
-
+            if(querySnapshot.empty) tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">Nadie ha jugado a ${juegoSeleccionado} aún.</td></tr>`;
         } catch (error) {
             console.error("Error ranking:", error);
-            // Si falta el índice, esto ayuda a detectarlo
-            if(error.message.includes("requires an index")) {
-                console.log("¡ALERTA! Necesitas crear un índice en Firebase. Revisa la consola.");
-            }
-            tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4757;">⚠️ Error de Base de Datos. Revisa la consola.</td></tr>`;
+            tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4757;">⚠️ Error al cargar.</td></tr>`;
         }
     }
 
-    // --- 3. LÓGICA DE JUEGOS Y UI ---
-    // (Filtros, Buscador y Scroll - Igual que antes)
+    // --- 3. FILTROS Y BUSCADOR ---
     const searchInput = document.getElementById('searchInput');
     const buttons = document.querySelectorAll('.category-buttons .btn');
     const subButtons = document.querySelectorAll('.sub-filter');
@@ -223,10 +175,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if(searchInput) searchInput.addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); filterGames(); });
-    buttons.forEach(btn => { btn.addEventListener('click', function() { buttons.forEach(b => b.classList.remove('active')); this.classList.add('active'); currentCategory = this.getAttribute('data-filter'); subButtons.forEach(b => b.classList.remove('active')); document.querySelector('.sub-filter[data-tag="all"]').classList.add('active'); currentTag = 'all'; filterGames(); }); });
-    subButtons.forEach(btn => { btn.addEventListener('click', function(e) { e.preventDefault(); subButtons.forEach(b => b.classList.remove('active')); this.classList.add('active'); currentTag = this.getAttribute('data-tag'); filterGames(); }); });
+    
+    buttons.forEach(btn => { 
+        btn.addEventListener('click', function() { 
+            buttons.forEach(b => b.classList.remove('active')); this.classList.add('active'); 
+            currentCategory = this.getAttribute('data-filter'); 
+            subButtons.forEach(b => b.classList.remove('active')); 
+            document.querySelector('.sub-filter[data-tag="all"]').classList.add('active'); 
+            currentTag = 'all'; filterGames(); 
+        }); 
+    });
 
+    subButtons.forEach(btn => { 
+        btn.addEventListener('click', function(e) { 
+            e.preventDefault(); subButtons.forEach(b => b.classList.remove('active')); this.classList.add('active'); 
+            currentTag = this.getAttribute('data-tag'); filterGames(); 
+        }); 
+    });
+
+    // --- 4. SCROLL REVEAL ---
     const revealElements = document.querySelectorAll('.reveal');
-    function checkReveal() { const windowHeight = window.innerHeight; revealElements.forEach((reveal) => { const elementTop = reveal.getBoundingClientRect().top; if (elementTop < windowHeight - 50) { reveal.classList.add('active'); reveal.style.opacity = "1"; } }); }
-    window.addEventListener('scroll', checkReveal); checkReveal(); setTimeout(() => { document.querySelectorAll('.reveal').forEach(el => el.style.opacity = '1'); }, 500);
+    function checkReveal() {
+        const windowHeight = window.innerHeight;
+        revealElements.forEach((reveal) => {
+            const elementTop = reveal.getBoundingClientRect().top;
+            if (elementTop < windowHeight - 50) { reveal.classList.add('active'); reveal.style.opacity = "1"; }
+        });
+    }
+    window.addEventListener('scroll', checkReveal);
+    checkReveal();
+    setTimeout(() => { document.querySelectorAll('.reveal').forEach(el => el.style.opacity = '1'); }, 500);
+
+    // --- 5. AUDIO FX (SONIDOS DE INTERFAZ) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let uiAudioCtx;
+
+    const playHoverSound = () => {
+        // Solo iniciamos el audio tras la primera interacción del usuario para cumplir con políticas de navegador
+        if (!uiAudioCtx) uiAudioCtx = new AudioContext();
+        if (uiAudioCtx.state === 'suspended') uiAudioCtx.resume();
+
+        const osc = uiAudioCtx.createOscillator();
+        const gain = uiAudioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(uiAudioCtx.destination);
+
+        // Sonido "Blip" tecnológico
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, uiAudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, uiAudioCtx.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(0.02, uiAudioCtx.currentTime); // Volumen muy suave
+        gain.gain.linearRampToValueAtTime(0, uiAudioCtx.currentTime + 0.05);
+
+        osc.start();
+        osc.stop(uiAudioCtx.currentTime + 0.05);
+    };
+
+    // Agregar sonido a elementos interactivos
+    const interactiveElements = document.querySelectorAll('.game-card, .btn, .nav-links a, .sub-filter, .rank-tab');
+    interactiveElements.forEach(el => {
+        el.addEventListener('mouseenter', playHoverSound);
+    });
+
 });
