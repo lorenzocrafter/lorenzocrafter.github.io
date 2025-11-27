@@ -1,7 +1,9 @@
 // IMPORTAMOS FIREBASE
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// TU CONFIGURACIÓN
 const firebaseConfig = {
   apiKey: "AIzaSyBduWRoZK8ia-UP3W-tJWtVu3_lTHKRp9M",
   authDomain: "blox-games-78e8b.firebaseapp.com",
@@ -12,13 +14,40 @@ const firebaseConfig = {
   measurementId: "G-BFKX5P23SN"
 };
 
+// INICIALIZAR
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+
+console.log("Firebase inicializado correctamente."); // CHIVATO 1
+
+// --- FUNCIÓN GLOBAL PARA GUARDAR ---
+window.guardarPuntaje = async (juego, puntos) => {
+    const user = auth.currentUser;
+    if (user) {
+        try {
+            console.log("Intentando guardar puntaje...", juego, puntos); // CHIVATO 2
+            await addDoc(collection(db, "puntuaciones"), {
+                nombre: user.displayName,
+                foto: user.photoURL,
+                juego: juego,
+                puntos: puntos,
+                fecha: new Date()
+            });
+            console.log("¡Puntaje guardado en la nube con éxito!"); // CHIVATO 3
+        } catch (e) {
+            console.error("ERROR AL GUARDAR:", e); // CHIVATO ERROR
+            alert("No se pudo guardar el récord: " + e.message);
+        }
+    } else {
+        console.log("No se guardó: Usuario no logueado.");
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- 1. LOGIN GOOGLE ---
+    // --- 1. LOGIN ---
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userInfo = document.getElementById('userInfo');
@@ -27,18 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider)
-                .then((result) => console.log("Conectado"))
-                .catch((error) => alert("Error: " + error.message));
+            signInWithPopup(auth, provider).then(() => console.log("Login OK")).catch(e => console.error(e));
         });
-
         logoutBtn.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                localStorage.removeItem('bloxUsername');
-                location.reload();
-            });
+            signOut(auth).then(() => { localStorage.removeItem('bloxUsername'); location.reload(); });
         });
-
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 loginBtn.style.display = 'none';
@@ -53,31 +75,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 2. SISTEMA DE FILTRADO TOTAL (Categoría + Submenú) ---
-    const catButtons = document.querySelectorAll('.filter-btn'); // Botones grandes
-    const subButtons = document.querySelectorAll('.sub-filter'); // Nuevos/Clásicos
+    // --- 2. RANKING (CON CHIVATOS) ---
+    const tablaRanking = document.getElementById('tabla-ranking-body');
+    
+    if (tablaRanking) {
+        console.log("Estamos en la página de Ranking. Iniciando carga..."); // CHIVATO 4
+        cargarRankingGlobal();
+    }
+
+    async function cargarRankingGlobal() {
+        try {
+            console.log("Pidiendo datos a Firebase..."); // CHIVATO 5
+            const q = query(collection(db, "puntuaciones"), orderBy("puntos", "desc"), limit(10));
+            const querySnapshot = await getDocs(q);
+            
+            console.log("Datos recibidos. Cantidad:", querySnapshot.size); // CHIVATO 6
+            
+            tablaRanking.innerHTML = ""; 
+
+            let posicion = 1;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                console.log("Fila:", data); // CHIVATO 7
+                const fila = `
+                    <tr>
+                        <td class="player-rank">#${posicion}</td>
+                        <td style="display:flex; align-items:center; gap:10px;">
+                            <img src="${data.foto}" style="width:24px; height:24px; border-radius:50%;">
+                            ${data.nombre}
+                        </td>
+                        <td>${data.juego}</td>
+                        <td class="player-score">${data.puntos}</td>
+                    </tr>
+                `;
+                tablaRanking.innerHTML += fila;
+                posicion++;
+            });
+
+            if(querySnapshot.empty) {
+                tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">La base de datos está vacía. ¡Juega para inaugurarla!</td></tr>`;
+            }
+
+        } catch (error) {
+            console.error("ERROR CRÍTICO AL LEER RANKING:", error); // CHIVATO ERROR FINAL
+            tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">Error: ${error.message} <br> Mira la consola (F12) para más detalles.</td></tr>`;
+        }
+    }
+
+    // --- 3. FILTROS Y UI ---
+    // (El resto del código se mantiene igual para filtros y scroll)
+    const buttons = document.querySelectorAll('.category-buttons .btn');
+    const subButtons = document.querySelectorAll('.sub-filter');
     const cards = document.querySelectorAll('.game-card');
+    let currentCategory = 'all'; let currentTag = 'all';
 
-    let currentCategory = 'all';
-    let currentTag = 'all';
-
-    // Función maestra que decide qué mostrar
     function filterGames() {
         cards.forEach(card => {
             const cardCat = card.getAttribute('data-category');
             const cardTag = card.getAttribute('data-tag');
-
-            // ¿Cumple la categoría? (O está en 'todos')
             const matchCat = (currentCategory === 'all' || cardCat === currentCategory);
-            
-            // ¿Cumple el tag? (O está en 'populares/todos', o el juego es 'popular')
-            // Nota: Para simplificar, si estás en "Populares" mostramos todo, 
-            // si estás en "Nuevos" solo los nuevos, etc.
             let matchTag = true;
-            if (currentTag !== 'all') {
-                matchTag = (cardTag === currentTag);
-            }
-
+            if (currentTag !== 'all') matchTag = (cardTag === currentTag);
+            
             if (matchCat && matchTag) {
                 card.style.display = 'flex';
                 setTimeout(() => card.style.opacity = '1', 50);
@@ -88,26 +147,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Click en Categorías (Acción / Puzzle)
-    catButtons.forEach(btn => {
+    buttons.forEach(btn => {
         btn.addEventListener('click', function() {
-            catButtons.forEach(b => b.classList.remove('active'));
+            buttons.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             currentCategory = this.getAttribute('data-filter');
-            
-            // Reseteamos el subfiltro visualmente para no confundir
             subButtons.forEach(b => b.classList.remove('active'));
             document.querySelector('.sub-filter[data-tag="all"]').classList.add('active');
             currentTag = 'all';
-
             filterGames();
         });
     });
 
-    // Click en Sub-menú (Nuevos / Clásicos)
     subButtons.forEach(btn => {
         btn.addEventListener('click', function(e) {
-            e.preventDefault(); // Evitar saltos raros
+            e.preventDefault();
             subButtons.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             currentTag = this.getAttribute('data-tag');
@@ -115,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 3. SMOOTH SCROLL (Por si el CSS falla en algún navegador viejo) ---
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
@@ -124,79 +177,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-// --- EFECTO DE PARTÍCULAS ---
-const canvas = document.getElementById('hero-particles');
-if (canvas) {
-    const ctx = canvas.getContext('2d');
-    let particlesArray;
-
-    // Ajustar tamaño
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight; // O altura del hero section
-
-    class Particle {
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.size = Math.random() * 2 + 0.5; // Puntos pequeños
-            this.speedX = Math.random() * 1 - 0.5; // Movimiento lento
-            this.speedY = Math.random() * 1 - 0.5;
-            this.color = Math.random() > 0.5 ? 'rgba(0, 255, 242,' : 'rgba(112, 0, 255,'; // Cyan o Morado
-        }
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            // Rebotar en bordes (o reaparecer)
-            if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-            if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-        }
-        draw() {
-            ctx.fillStyle = this.color + Math.random() + ')'; // Parpadeo
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    function initParticles() {
-        particlesArray = [];
-        const numberOfParticles = 60; // Cantidad de partículas
-        for (let i = 0; i < numberOfParticles; i++) {
-            particlesArray.push(new Particle());
-        }
-    }
-
-    function animateParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let i = 0; i < particlesArray.length; i++) {
-            particlesArray[i].update();
-            particlesArray[i].draw();
-        }
-        requestAnimationFrame(animateParticles);
-    }
-
-    initParticles();
-    animateParticles();
-
-    // Redimensionar si cambia la ventana
-    window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        initParticles();
-    });
-}
-// --- SCROLL REVEAL ---
-window.addEventListener('scroll', () => {
-    const reveals = document.querySelectorAll('.reveal');
-    const windowHeight = window.innerHeight;
-    const elementVisible = 150;
-
-    reveals.forEach((reveal) => {
-        const elementTop = reveal.getBoundingClientRect().top;
-        if (elementTop < windowHeight - elementVisible) {
-            reveal.classList.add('active');
-        }
-    });
-});
-// Disparar una vez al inicio por si ya se ve
-window.dispatchEvent(new Event('scroll'));
