@@ -20,14 +20,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-console.log("Firebase inicializado correctamente."); // CHIVATO 1
-
-// --- FUNCIÓN GLOBAL PARA GUARDAR ---
+// FUNCIÓN GLOBAL PARA GUARDAR PUNTOS
 window.guardarPuntaje = async (juego, puntos) => {
     const user = auth.currentUser;
     if (user) {
         try {
-            console.log("Intentando guardar puntaje...", juego, puntos); // CHIVATO 2
             await addDoc(collection(db, "puntuaciones"), {
                 nombre: user.displayName,
                 foto: user.photoURL,
@@ -35,13 +32,10 @@ window.guardarPuntaje = async (juego, puntos) => {
                 puntos: puntos,
                 fecha: new Date()
             });
-            console.log("¡Puntaje guardado en la nube con éxito!"); // CHIVATO 3
+            console.log("Puntaje guardado!");
         } catch (e) {
-            console.error("ERROR AL GUARDAR:", e); // CHIVATO ERROR
-            alert("No se pudo guardar el récord: " + e.message);
+            console.error("Error al guardar:", e);
         }
-    } else {
-        console.log("No se guardó: Usuario no logueado.");
     }
 };
 
@@ -56,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).then(() => console.log("Login OK")).catch(e => console.error(e));
+            signInWithPopup(auth, provider).catch(e => alert("Error: " + e.message));
         });
         logoutBtn.addEventListener('click', () => {
             signOut(auth).then(() => { localStorage.removeItem('bloxUsername'); location.reload(); });
@@ -75,28 +69,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 2. RANKING (CON CHIVATOS) ---
+    // --- 2. RANKING ---
     const tablaRanking = document.getElementById('tabla-ranking-body');
-    
     if (tablaRanking) {
-        console.log("Estamos en la página de Ranking. Iniciando carga..."); // CHIVATO 4
         cargarRankingGlobal();
     }
 
     async function cargarRankingGlobal() {
         try {
-            console.log("Pidiendo datos a Firebase..."); // CHIVATO 5
             const q = query(collection(db, "puntuaciones"), orderBy("puntos", "desc"), limit(10));
             const querySnapshot = await getDocs(q);
             
-            console.log("Datos recibidos. Cantidad:", querySnapshot.size); // CHIVATO 6
-            
             tablaRanking.innerHTML = ""; 
-
             let posicion = 1;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                console.log("Fila:", data); // CHIVATO 7
                 const fila = `
                     <tr>
                         <td class="player-rank">#${posicion}</td>
@@ -111,19 +98,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 tablaRanking.innerHTML += fila;
                 posicion++;
             });
-
             if(querySnapshot.empty) {
-                tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">La base de datos está vacía. ¡Juega para inaugurarla!</td></tr>`;
+                tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">Sé el primero en el ranking.</td></tr>`;
             }
-
         } catch (error) {
-            console.error("ERROR CRÍTICO AL LEER RANKING:", error); // CHIVATO ERROR FINAL
-            tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">Error: ${error.message} <br> Mira la consola (F12) para más detalles.</td></tr>`;
+            console.error("Error ranking:", error);
+            tablaRanking.innerHTML = `<tr><td colspan="4" style="text-align:center;">Error cargando datos.</td></tr>`;
         }
     }
 
-    // --- 3. FILTROS Y UI ---
-    // (El resto del código se mantiene igual para filtros y scroll)
+    // --- 3. FILTROS Y ANIMACIONES (LO QUE FALTABA) ---
     const buttons = document.querySelectorAll('.category-buttons .btn');
     const subButtons = document.querySelectorAll('.sub-filter');
     const cards = document.querySelectorAll('.game-card');
@@ -169,11 +153,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if(target) target.scrollIntoView({ behavior: 'smooth' });
+    // SCROLL REVEAL (Hace aparecer los juegos)
+    const revealElements = document.querySelectorAll('.reveal');
+    function checkReveal() {
+        const windowHeight = window.innerHeight;
+        revealElements.forEach((reveal) => {
+            const elementTop = reveal.getBoundingClientRect().top;
+            if (elementTop < windowHeight - 50) {
+                reveal.classList.add('active');
+                reveal.style.opacity = "1";
+            }
         });
-    });
+    }
+    window.addEventListener('scroll', checkReveal);
+    checkReveal(); // Ejecutar al inicio
+    // Parche de seguridad
+    setTimeout(() => { document.querySelectorAll('.reveal').forEach(el => el.style.opacity = '1'); }, 500);
 });
