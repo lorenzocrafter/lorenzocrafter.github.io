@@ -185,3 +185,18 @@ if (canvas) {
         initParticles();
     });
 }
+// --- SCROLL REVEAL ---
+window.addEventListener('scroll', () => {
+    const reveals = document.querySelectorAll('.reveal');
+    const windowHeight = window.innerHeight;
+    const elementVisible = 150;
+
+    reveals.forEach((reveal) => {
+        const elementTop = reveal.getBoundingClientRect().top;
+        if (elementTop < windowHeight - elementVisible) {
+            reveal.classList.add('active');
+        }
+    });
+});
+// Disparar una vez al inicio por si ya se ve
+window.dispatchEvent(new Event('scroll'));
