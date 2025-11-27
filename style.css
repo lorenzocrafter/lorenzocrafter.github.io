@@ -1,21 +1,25 @@
-/* --- FUENTES E IMPORTACIONES --- */
+/* =========================================
+   1. CONFIGURACIÓN BASE Y FUENTES
+   ========================================= */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap');
 
-/* --- CONFIGURACIÓN GENERAL --- */
+* {
+    box-sizing: border-box; /* Vital para que los inputs no se salgan */
+}
+
 html {
-    scroll-behavior: smooth; /* Desplazamiento suave al navegar */
+    scroll-behavior: smooth;
 }
 
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
-    /* Fondo base azul muy oscuro */
-    background-color: #0a0a12; 
-    /* Truco CSS para crear una rejilla (Grid) */
+    background-color: #050505;
+    /* Fondo Cyberpunk: Rejilla + Degradado */
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px; /* Tamaño de los cuadros */
+    background-size: 40px 40px;
     color: #fff;
     overflow-x: hidden;
 }
@@ -26,14 +30,16 @@ body {
     padding: 0 20px;
 }
 
-/* --- NAVBAR (EFECTO CRISTAL) --- */
+/* =========================================
+   2. NAVBAR (BARRA DE NAVEGACIÓN)
+   ========================================= */
 .navbar {
-    background-color: rgba(15, 5, 24, 0.85); /* Semitransparente */
-    backdrop-filter: blur(12px); /* Efecto borroso detrás */
-    -webkit-backdrop-filter: blur(12px); /* Soporte Safari */
+    background-color: rgba(15, 5, 24, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 15px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    position: sticky; /* Se queda pegado arriba */
+    position: sticky;
     top: 0;
     z-index: 1000;
     transition: all 0.3s ease;
@@ -45,7 +51,7 @@ body {
     align-items: center;
 }
 
-/* Nuevo Logo de Texto */
+/* Logo de Texto */
 .logo-text {
     font-family: 'Poppins', sans-serif;
     font-weight: 900;
@@ -64,11 +70,16 @@ body {
     text-shadow: 0 0 15px rgba(0, 255, 242, 0.5);
 }
 
-/* Enlaces de Navegación */
+/* Enlaces y Menú Usuario */
+.navbar .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
 .navbar .nav-links a {
     color: #aaa;
     text-decoration: none;
-    margin-left: 30px;
     font-weight: 600;
     font-size: 15px;
     position: relative;
@@ -90,24 +101,29 @@ body {
     box-shadow: 0 0 10px #00fff2;
 }
 
-/* --- HERO SECTION (BANNER) --- */
+/* =========================================
+   3. HERO SECTION (BANNER)
+   ========================================= */
 .hero-section {
-    /* Degradado elegante en lugar de imagen repetida */
-    background: radial-gradient(circle at top center, #1a0a2e 0%, #050505 80%);
-    padding: 100px 0 80px 0;
-    text-align: center;
-    position: relative;
-}
-
-/* Efecto de luz ambiental */
-.hero-section {
-    /* Un degradado que va de morado oscuro a transparente */
-    background: radial-gradient(circle at center, rgba(40, 20, 60, 0.8) 0%, transparent 90%);
+    background: radial-gradient(circle at top center, rgba(40, 20, 60, 0.8) 0%, transparent 90%);
     padding: 120px 0 90px 0;
     text-align: center;
     position: relative;
-    /* Borde sutil abajo para separar */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+/* Luz ambiental detrás del título */
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: rgba(112, 0, 255, 0.15);
+    filter: blur(80px);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .hero-content {
@@ -116,11 +132,22 @@ body {
 }
 
 .hero-content h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem); /* Tamaño adaptable */
+    font-size: clamp(2.5rem, 5vw, 4rem);
     margin: 0;
     font-weight: 900;
     letter-spacing: -2px;
     line-height: 1.1;
+}
+
+/* Animación Texto Neón */
+@keyframes textGlow {
+    0% { text-shadow: 0 0 10px rgba(0, 255, 242, 0.2); }
+    50% { text-shadow: 0 0 30px rgba(0, 255, 242, 0.6), 0 0 10px rgba(0, 255, 242, 0.8); }
+    100% { text-shadow: 0 0 10px rgba(0, 255, 242, 0.2); }
+}
+
+.hero-content h1 span {
+    animation: textGlow 3s infinite alternate ease-in-out;
 }
 
 .hero-content p {
@@ -132,31 +159,27 @@ body {
     margin-right: auto;
 }
 
-/* --- SECCIÓN PRINCIPAL Y FILTROS --- */
-.main-content {
-    padding-top: 40px;
-}
+/* =========================================
+   4. FILTROS, BUSCADOR Y BOTONES
+   ========================================= */
+.main-content { padding-top: 40px; }
 
 .category-buttons {
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     display: flex;
-    gap: 15px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
-.btn {
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.3s ease;
-}
+.btn { cursor: pointer; font-family: inherit; transition: all 0.3s ease; }
 
 .btn.filter-btn {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #ccc;
-    padding: 10px 25px;
+    padding: 8px 20px;
     border-radius: 25px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -168,57 +191,38 @@ body {
     transform: translateY(-2px);
 }
 
-/* Sub-navegación (Nuevos/Clásicos) */
+/* Buscador */
+.search-container { margin-bottom: 30px; position: relative; width: 100%; max-width: 400px; }
+.search-input {
+    width: 100%; padding: 12px 20px; padding-left: 45px; background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 30px; color: #fff;
+    font-family: 'Poppins', sans-serif; font-size: 16px; outline: none; transition: all 0.3s ease;
+}
+.search-input:focus { border-color: #00fff2; box-shadow: 0 0 15px rgba(0, 255, 242, 0.2); background: rgba(0, 0, 0, 0.3); }
+.search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; pointer-events: none; }
+
+/* Sub-navegación */
 .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding-bottom: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 15px;
 }
+.subsection-nav a { color: #666; text-decoration: none; margin-right: 20px; font-weight: 600; font-size: 14px; transition: color 0.3s; }
+.subsection-nav a.active, .subsection-nav a:hover { color: #fff; }
+.header-icons span { color: #444; font-size: 20px; margin-left: 15px; }
+.section-title { font-size: 24px; font-weight: 700; margin-bottom: 25px; color: #fff; border-left: 4px solid #00fff2; padding-left: 15px; }
 
-.subsection-nav a {
-    color: #666;
-    text-decoration: none;
-    margin-right: 20px;
-    font-weight: 600;
-    font-size: 14px;
-    transition: color 0.3s;
-}
-
-.subsection-nav a.active, .subsection-nav a:hover {
-    color: #fff;
-}
-
-.header-icons span {
-    color: #444;
-    font-size: 20px;
-    margin-left: 15px;
-}
-
-.section-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 25px;
-    color: #fff;
-    border-left: 4px solid #00fff2;
-    padding-left: 15px;
-}
-
-/* --- TARJETAS DE JUEGO (GRID) --- */
+/* =========================================
+   5. TARJETAS DE JUEGO (GRID SYSTEM)
+   ========================================= */
 .game-cards {
     display: grid;
-    /* Columnas automáticas y adaptables */
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
     gap: 30px;
     padding-bottom: 60px;
 }
 
 .game-card {
-    /* Un gris azulado oscuro, no negro */
-    background-color: #13131f; 
-    /* Borde un poco más visible */
+    background-color: #13131f;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     overflow: hidden;
@@ -227,455 +231,140 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Sombra suave para separarla del fondo */
     box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
 .game-card:hover {
     transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 242, 0.15);
-    border-color: rgba(0, 255, 242, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 255, 242, 0.2);
+    border-color: #00fff2;
     z-index: 2;
 }
 
 .game-card img {
-    width: 100%;
-    height: 220px;
-    object-fit: cover;
-    display: block;
+    width: 100%; height: 220px; object-fit: cover; display: block;
 }
 
 .card-info {
-    padding: 15px 20px;
-    background: #1a1a26;
-    border-top: 1px solid rgba(255, 255, 255, 0.02);
+    padding: 15px 20px; background: #1a1a26; border-top: 1px solid rgba(255, 255, 255, 0.02);
 }
 
-.card-info h3 {
-    margin: 0 0 5px 0;
-    font-size: 18px;
-    color: #fff;
-}
+.card-info h3 { margin: 0 0 5px 0; font-size: 18px; color: #fff; }
+.card-info span { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
 
-.card-info span {
-    font-size: 12px;
-    color: #888;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+/* Favoritos (Corazón) */
+.fav-btn {
+    position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #888;
+    width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 20px; transition: all 0.2s; z-index: 10; border: 1px solid rgba(255,255,255,0.1);
 }
+.fav-btn:hover { transform: scale(1.1); background: rgba(255,255,255,0.1); color: #fff; }
+.fav-btn.active { color: #ff4757; text-shadow: 0 0 15px #ff4757; border-color: #ff4757; }
 
-/* --- PÁGINA DE RANKING --- */
+/* =========================================
+   6. RANKING & ESTADÍSTICAS
+   ========================================= */
 .ranking-container {
-    max-width: 800px;
-    margin: 40px auto;
-    background: #15151e;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(112, 0, 255, 0.2);
+    max-width: 800px; margin: 40px auto; background: #15151e; padding: 40px;
+    border-radius: 20px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.5); border: 1px solid rgba(112, 0, 255, 0.2);
 }
+h2.rank-title { text-align: center; color: #fff; font-size: 2.5rem; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px rgba(112, 0, 255, 0.6); }
 
-h2.rank-title {
-    text-align: center;
-    color: #fff;
-    font-size: 2.5rem;
-    margin-bottom: 40px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 0 20px rgba(112, 0, 255, 0.6);
-}
-
-.score-board {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 40px;
-}
-
-.score-board th {
-    background: #0a0a10;
-    color: #888;
-    padding: 15px;
-    text-align: left;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.score-board td {
-    padding: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: #ddd;
-    font-weight: 500;
-}
-
-.score-board tr:hover td {
-    background: rgba(255, 255, 255, 0.03);
-    color: #fff;
-}
-
+/* Tabla */
+.score-board { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+.score-board th { background: #0a0a10; color: #888; padding: 15px; text-align: left; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+.score-board td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #ddd; font-weight: 500; }
+.score-board tr:hover td { background: rgba(255, 255, 255, 0.03); color: #fff; }
 .player-rank { color: #e0b0ff !important; font-weight: bold; }
 .player-score { color: #00fff2 !important; text-align: right; font-family: monospace; font-size: 1.2rem; }
 
-/* Tarjeta de Estadísticas Personales */
+/* Pestañas de Ranking */
+.tabs-container { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; justify-content: center; }
+.rank-tab {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #aaa; padding: 8px 15px; border-radius: 20px; cursor: pointer; white-space: nowrap; transition: all 0.3s; font-size: 14px;
+}
+.rank-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.rank-tab.active { background: #00fff2; color: #000; border-color: #00fff2; font-weight: bold; box-shadow: 0 0 15px rgba(0, 255, 242, 0.4); }
+
+/* Stats Personales */
 .my-stats {
-    background: linear-gradient(135deg, #7000ff 0%, #2b1b3f 100%);
-    padding: 25px;
-    border-radius: 15px;
-    margin-bottom: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    overflow: hidden;
+    background: linear-gradient(135deg, #7000ff 0%, #2b1b3f 100%); padding: 25px; border-radius: 15px;
+    margin-bottom: 40px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;
     box-shadow: 0 10px 30px rgba(112, 0, 255, 0.3);
 }
-
-.my-stats h3 {
-    margin-top: 0;
-    color: #fff;
-    font-size: 1.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-}
-
-.stat-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    font-size: 1.1rem;
-}
-
+.my-stats h3 { margin-top: 0; color: #fff; font-size: 1.2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 15px; margin-bottom: 15px; }
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 1.1rem; }
 .stat-val { color: #00fff2; font-weight: bold; text-shadow: 0 0 10px rgba(0, 255, 242, 0.4); }
 
-/* --- MODAL DE LOGIN --- */
+/* =========================================
+   7. MODALES Y UI FLOTANTE
+   ========================================= */
 .modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    backdrop-filter: blur(8px);
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9);
+    display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(8px);
 }
-
 .modal-content {
-    background: #1a1a2e;
-    padding: 40px;
-    border-radius: 20px;
-    border: 1px solid #00fff2;
-    text-align: center;
-    box-shadow: 0 0 60px rgba(0, 255, 242, 0.15);
-    width: 90%;
-    max-width: 400px;
+    background: #1a1a2e; padding: 40px; border-radius: 20px; border: 1px solid #00fff2;
+    text-align: center; box-shadow: 0 0 60px rgba(0, 255, 242, 0.15); width: 90%; max-width: 400px;
     animation: slideIn 0.4s ease;
 }
+@keyframes slideIn { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-@keyframes slideIn {
-    from { transform: translateY(50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+/* Billetera (B-Coins) */
+.coin-badge {
+    display: none; align-items: center; gap: 5px;
+    background: rgba(255, 204, 0, 0.15); border: 1px solid #ffcc00; color: #ffcc00;
+    padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px;
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); transition: transform 0.2s; cursor: default;
 }
-/* ANIMACIÓN DE TÍTULO NEÓN */
-@keyframes textGlow {
-    0% { text-shadow: 0 0 10px rgba(0, 255, 242, 0.2); }
-    50% { text-shadow: 0 0 30px rgba(0, 255, 242, 0.6), 0 0 10px rgba(0, 255, 242, 0.8); }
-    100% { text-shadow: 0 0 10px rgba(0, 255, 242, 0.2); }
-}
+.coin-badge:hover { transform: scale(1.05); background: rgba(255, 204, 0, 0.25); }
+.coin-pop { animation: coinPop 0.3s ease-in-out; }
+@keyframes coinPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); color: #fff; } 100% { transform: scale(1); } }
 
-.hero-content h1 span {
-    /* Esto aplica la animación a la palabra "LÍMITES" */
-    animation: textGlow 3s infinite alternate ease-in-out;
-}
+/* Botón Editar Nombre */
+.edit-name-btn { background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 12px; padding: 2px 5px; transition: color 0.2s; }
+.edit-name-btn:hover { color: #00fff2; }
 
-/* BORDE DE COLORES ANIMADO PARA EL LOGO */
-@keyframes borderRotate {
-    0% { border-color: #00fff2; }
-    50% { border-color: #7000ff; }
-    100% { border-color: #00fff2; }
-}
+/* Modo Admin */
+.delete-btn { display: none; background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 14px; opacity: 0.6; transition: opacity 0.2s; }
+body.is-admin .delete-btn { display: inline-block; }
+.delete-btn:hover { opacity: 1; transform: scale(1.1); }
 
-#userPhoto {
-    /* Hace que el borde de tu foto cambie de color */
-    animation: borderRotate 4s infinite linear;
-    transition: transform 0.3s;
-}
+/* Avatares en Modal */
+.avatar-option { width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.1); }
+.avatar-option:hover { transform: scale(1.1); border-color: #aaa; }
+.avatar-option.selected { border-color: #00fff2 !important; box-shadow: 0 0 15px #00fff2; background: rgba(0, 255, 242, 0.1); }
 
-#userPhoto:hover {
-    transform: scale(1.1) rotate(5deg);
-}
-/* Estado inicial invisible */
-.reveal {
-    opacity: 0;
-    transform: translateY(50px);
-    transition: all 0.8s ease-out;
-}
-
-/* Estado visible */
-.reveal.active {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* --- BARRA DE BÚSQUEDA --- */
-.search-container {
-    margin-bottom: 30px;
-    position: relative;
-    max-width: 400px;
-}
-
-.search-input {
-    width: 100%;
-    padding: 12px 20px;
-    padding-left: 45px; /* Espacio para el icono */
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 30px;
-    color: #fff;
-    font-family: 'Poppins', sans-serif;
-    font-size: 16px;
-    outline: none;
-    transition: all 0.3s ease;
-}
-
-.search-input:focus {
-    border-color: #00fff2;
-    box-shadow: 0 0 15px rgba(0, 255, 242, 0.2);
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.search-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #888;
-    pointer-events: none;
-}
-
-/* --- BOTÓN DE EDITAR NOMBRE --- */
-.edit-name-btn {
-    background: transparent;
-    border: none;
-    color: #aaa;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 2px 5px;
-    transition: color 0.2s;
-}
-
-.edit-name-btn:hover {
-    color: #00fff2;
-}
-
-/* --- CHAT GLOBAL --- */
-.chat-toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: linear-gradient(45deg, #7000ff, #00fff2);
-    border: none;
-    color: #fff;
-    padding: 15px 25px;
-    border-radius: 50px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 0 20px rgba(112, 0, 255, 0.5);
-    z-index: 2000;
-    transition: transform 0.2s;
-    font-family: 'Poppins', sans-serif;
-}
-
+/* =========================================
+   8. CHAT GLOBAL
+   ========================================= */
+.chat-toggle { position: fixed; bottom: 20px; right: 20px; background: linear-gradient(45deg, #7000ff, #00fff2); border: none; color: #fff; padding: 15px 25px; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px rgba(112, 0, 255, 0.5); z-index: 2000; transition: transform 0.2s; font-family: 'Poppins', sans-serif; }
 .chat-toggle:hover { transform: scale(1.1); }
-
-.chat-container {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 320px;
-    height: 450px;
-    background: rgba(10, 5, 20, 0.95);
-    border: 1px solid #00fff2;
-    border-radius: 15px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-    display: none; /* Oculto por defecto */
-    flex-direction: column;
-    z-index: 2000;
-    backdrop-filter: blur(10px);
-    overflow: hidden;
-}
-
+.chat-container { position: fixed; bottom: 80px; right: 20px; width: 320px; height: 450px; background: rgba(10, 5, 20, 0.95); border: 1px solid #00fff2; border-radius: 15px; box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); display: none; flex-direction: column; z-index: 2000; backdrop-filter: blur(10px); overflow: hidden; }
 .chat-container.open { display: flex; }
-
-.chat-header {
-    background: rgba(112, 0, 255, 0.2);
-    padding: 10px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    color: #00fff2;
-    font-size: 14px;
-}
-
-.chat-messages {
-    flex-grow: 1;
-    padding: 10px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Estilo del Scrollbar */
+.chat-header { background: rgba(112, 0, 255, 0.2); padding: 10px 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; font-weight: bold; color: #00fff2; font-size: 14px; }
+.chat-messages { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .chat-messages::-webkit-scrollbar { width: 5px; }
 .chat-messages::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
-
-.message {
-    font-size: 13px;
-    line-height: 1.4;
-    word-wrap: break-word;
-}
-
+.message { font-size: 13px; line-height: 1.4; word-wrap: break-word; }
 .message.system { color: #888; font-style: italic; text-align: center; font-size: 11px; margin-bottom: 10px; }
-
 .message .msg-user { color: #00fff2; font-weight: bold; margin-right: 5px; }
 .message .msg-content { color: #ddd; }
-.message.mine .msg-user { color: #7000ff; } /* Mis mensajes */
+.message.mine .msg-user { color: #7000ff; }
+.chat-input-area { padding: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 5px; }
+#chatInput { flex-grow: 1; background: rgba(255, 255, 255, 0.05); border: none; color: #fff; padding: 8px; border-radius: 5px; outline: none; }
+#sendBtn { background: #7000ff; border: none; color: #fff; padding: 0 12px; border-radius: 5px; cursor: pointer; }
 
-.chat-input-area {
-    padding: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    gap: 5px;
-}
+/* Animación Scroll Reveal */
+.reveal { opacity: 0; transform: translateY(50px); transition: all 0.8s ease-out; }
+.reveal.active { opacity: 1; transform: translateY(0); }
 
-#chatInput {
-    flex-grow: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-    color: #fff;
-    padding: 8px;
-    border-radius: 5px;
-    outline: none;
-}
-
-#sendBtn {
-    background: #7000ff;
-    border: none;
-    color: #fff;
-    padding: 0 12px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-/* ESTILOS DE SELECCIÓN DE AVATAR */
-.avatar-option {
-    width: 50px; 
-    height: 50px; 
-    border-radius: 50%; 
-    border: 2px solid transparent; 
-    cursor: pointer; 
-    transition: all 0.2s;
-    background: rgba(255,255,255,0.1);
-}
-
-.avatar-option:hover {
-    transform: scale(1.1);
-    border-color: #aaa;
-}
-
-.avatar-option.selected {
-    border-color: #00fff2 !important;
-    box-shadow: 0 0 15px #00fff2;
-    background: rgba(0, 255, 242, 0.1);
-}
-
-/* --- FAVORITOS (CORAZÓN) --- */
-.fav-btn {
-    position: absolute;
-    top: 10px; 
-    right: 10px;
-    background: rgba(0,0,0,0.6);
-    color: #888; /* Gris cuando no es fav */
-    width: 35px; 
-    height: 35px;
-    border-radius: 50%;
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    cursor: pointer;
-    font-size: 20px;
-    transition: all 0.2s;
-    z-index: 10;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.fav-btn:hover { 
-    transform: scale(1.1); 
-    background: rgba(255,255,255,0.1);
-    color: #fff; 
-}
-
-.fav-btn.active { 
-    color: #ff4757; /* Rojo cuando es fav */
-    text-shadow: 0 0 15px #ff4757;
-    border-color: #ff4757;
-}
-
-/* --- MODO ADMIN (BOTÓN BORRAR) --- */
-.delete-btn {
-    display: none; /* Oculto para mortales */
-    background: none; 
-    border: none;
-    cursor: pointer; 
-    margin-left: 8px; 
-    font-size: 14px;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-/* Esta clase se agrega al body si eres Admin */
-body.is-admin .delete-btn { 
-    display: inline-block; 
-}
-
-.delete-btn:hover { 
-    opacity: 1; 
-    transform: scale(1.1); 
-}
-
-/* --- BILLETERA (B-COINS) --- */
-.coin-badge {
-    display: none; /* Se oculta si no estás logueado */
-    align-items: center;
-    gap: 5px;
-    background: rgba(255, 204, 0, 0.15);
-    border: 1px solid #ffcc00;
-    color: #ffcc00;
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 14px;
-    margin-right: 15px;
-    box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
-    transition: transform 0.2s;
-    cursor: default;
-}
-
-.coin-badge:hover {
-    transform: scale(1.05);
-    background: rgba(255, 204, 0, 0.25);
-    box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
-}
-
-/* Animación cuando ganas monedas */
-@keyframes coinPop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.5); color: #fff; }
-    100% { transform: scale(1); }
-}
-
-.coin-pop {
-    animation: coinPop 0.3s ease-in-out;
+/* Media Queries para Móvil */
+@media (max-width: 768px) {
+    .navbar .nav-links { gap: 15px; }
+    .coin-badge { font-size: 12px; padding: 4px 10px; margin-right: 5px; }
+    .game-cards { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .hero-content h1 { font-size: 2rem; }
+    .chat-container { width: 90%; right: 5%; bottom: 80px; }
 }
