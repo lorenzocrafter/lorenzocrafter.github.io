@@ -446,3 +446,79 @@ body.is-admin .delete-btn { display: inline-block; }
 @keyframes fadeOut {
     to { opacity: 0; transform: translateY(-20px); }
 }
+
+/* --- NUEVO LOGO DE TEXTO (Más limpio) --- */
+.logo-text {
+    font-family: 'Poppins', sans-serif;
+    font-size: 28px;
+    font-weight: 900; /* Muy grueso */
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.logo-text span {
+    color: #00fff2; /* Cyan Neón */
+    text-shadow: 0 0 15px rgba(0, 255, 242, 0.6); /* Resplandor */
+}
+
+/* --- NUEVO HERO SECTION (Banner Principal) --- */
+.hero-section {
+    /* Degradado radial para dar profundidad (luz en el centro) */
+    background: radial-gradient(circle at center, #1a0a2e 0%, #050505 100%);
+    padding: 100px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content h1 {
+    font-size: 4rem; /* Gigante */
+    margin: 0;
+    font-weight: 900;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: -2px;
+}
+
+/* Animación de "Respiración" para el título */
+.hero-content h1 span {
+    color: #00fff2;
+    text-shadow: 0 0 20px rgba(0, 255, 242, 0.4);
+    animation: glow 3s infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 10px rgba(0, 255, 242, 0.2); }
+    to { text-shadow: 0 0 30px rgba(0, 255, 242, 0.8), 0 0 10px rgba(255, 255, 255, 0.5); }
+}
+
+.hero-content p {
+    font-size: 1.2rem;
+    color: #aaa;
+    max-width: 600px;
+    margin: 20px auto 30px auto;
+}
+
+/* Botón de Acción Principal */
+.hero-btn {
+    background: #00fff2;
+    color: #000;
+    font-weight: 900;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 255, 242, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hero-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 255, 242, 0.7);
+}
