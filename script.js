@@ -1,10 +1,10 @@
 // --- CONFIGURACIÓN ---
 const ADMIN_EMAIL = "lorenzocrafteryt@gmail.com"; // TU EMAIL
 
-// IMPORTACIONES
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, increment, query, where, orderBy, limit, getDocs, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// AÑADIDO: arrayUnion para guardar items
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, increment, arrayUnion, query, where, orderBy, limit, getDocs, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBduWRoZK8ia-UP3W-tJWtVu3_lTHKRp9M",
@@ -21,7 +21,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// --- 1. SISTEMA VISUAL (TOASTS) ---
+// --- 1. SISTEMA VISUAL ---
 window.showToast = (msg, type = 'info') => {
     const container = document.getElementById('toast-container');
     if(!container) return alert(msg);
@@ -33,7 +33,7 @@ window.showToast = (msg, type = 'info') => {
     setTimeout(() => toast.remove(), 3500);
 };
 
-// --- 2. TIENDA Y ECONOMÍA ---
+// --- 2. TIENDA E INVENTARIO ---
 function typeToClass(t) { return t==='gold'?'border-gold':t==='red'?'border-red':t==='rainbow'?'border-rainbow':''; }
 
 function aplicarBorde(c) { 
@@ -55,21 +55,26 @@ window.comprarBorde = async (tipo, precio) => {
     if (docSnap.exists()) {
         const data = docSnap.data();
         const monedas = data.monedas || 0;
+        const inventario = data.inventario || []; // Lista de cosas compradas
         const bordeDeseado = typeToClass(tipo);
 
-        // CHECK 1: ¿Ya lo tiene puesto? (Para no cobrar doble)
-        if (data.bordeActivo === bordeDeseado) {
-            return showToast("¡Ya tienes este borde equipado!", "info");
+        // CASO 1: YA LO COMPRASTE ANTES
+        if (inventario.includes(bordeDeseado)) {
+            await updateDoc(userRef, { bordeActivo: bordeDeseado });
+            showToast(`¡Borde ${tipo} equipado!`, "success");
+            aplicarBorde(bordeDeseado);
+            return; // Salimos para no cobrar
         }
 
-        // CHECK 2: ¿Tiene dinero?
+        // CASO 2: NO LO TIENES (HAY QUE COMPRAR)
         if (monedas >= precio) {
-            // COMPRA DIRECTA (Sin ventana fea)
+            // Cobrar, poner activo y AGREGAR AL INVENTARIO
             await updateDoc(userRef, {
                 monedas: increment(-precio),
-                bordeActivo: bordeDeseado
+                bordeActivo: bordeDeseado,
+                inventario: arrayUnion(bordeDeseado) 
             });
-            showToast("¡Compra exitosa! Estilo equipado.", "success");
+            showToast(`¡Compra exitosa! -${precio} monedas`, "success");
             aplicarBorde(bordeDeseado);
         } else {
             showToast(`Te faltan ${precio - monedas} monedas.`, "error");
@@ -81,10 +86,12 @@ window.comprarBorde = async (tipo, precio) => {
 window.guardarPuntaje = async (juego, puntos) => {
     const user = auth.currentUser;
     if (user) {
+        // Pagar
         const monedas = Math.ceil(puntos/10);
         const userRef = doc(db, "usuarios", user.uid);
         try { await updateDoc(userRef, { monedas: increment(monedas) }); } catch(e){}
 
+        // Guardar Récord
         const alias = localStorage.getItem('customAlias') || user.displayName;
         const avatar = localStorage.getItem('customAvatar') || user.photoURL;
         
@@ -102,7 +109,7 @@ window.guardarPuntaje = async (juego, puntos) => {
     }
 };
 
-// --- 4. FAVORITOS Y ADMIN ---
+// --- 4. FAVORITOS, ADMIN, ETC ---
 window.toggleFav = (btn, gameId, event) => {
     event.stopPropagation();
     btn.classList.toggle('active');
@@ -114,10 +121,11 @@ window.toggleFav = (btn, gameId, event) => {
     if(activeFilter && activeFilter.getAttribute('data-filter') === 'favoritos') activeFilter.click();
 };
 
-window.deleteMessage = async (id) => { if(confirm("Borrar mensaje?")) await deleteDoc(doc(db, "chat", id)); };
-window.deleteRecord = async (id) => { if(confirm("Borrar récord?")) await deleteDoc(doc(db, "puntuaciones", id)); window.location.reload(); };
+window.deleteMessage = async (id) => { if(confirm("Borrar?")) await deleteDoc(doc(db, "chat", id)); };
+window.deleteRecord = async (id) => { if(confirm("Borrar?")) await deleteDoc(doc(db, "puntuaciones", id)); window.location.reload(); };
 
-// --- INICIO DE LA APP ---
+
+// --- INICIO ---
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -172,9 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userRef = doc(db, "usuarios", user.uid);
                 onSnapshot(userRef, (s) => {
                     if(s.exists()) {
-                        if(coinDisplay) { coinDisplay.style.display="flex"; coinDisplay.innerText=`💰 ${s.data().monedas||0}`; }
-                        if(s.data().bordeActivo) aplicarBorde(s.data().bordeActivo);
-                    } else setDoc(userRef, { email: user.email, monedas: 0 });
+                        const data = s.data();
+                        if(coinDisplay) { coinDisplay.style.display="flex"; coinDisplay.innerText=`💰 ${data.monedas||0}`; }
+                        if(data.bordeActivo) aplicarBorde(data.bordeActivo);
+                    } else setDoc(userRef, { email: user.email, monedas: 0, inventario: [] });
                 });
 
                 if(user.email === ADMIN_EMAIL) document.body.classList.add('is-admin');
@@ -237,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else { card.style.display = 'none'; card.style.opacity = '0'; }
         });
     }
+
     if(searchInput) searchInput.addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); filterGames(); });
     buttons.forEach(btn => { btn.addEventListener('click', function() { buttons.forEach(b => b.classList.remove('active')); this.classList.add('active'); currentCategory = this.getAttribute('data-filter'); if(currentCategory === 'favoritos') { subButtons.forEach(b => b.classList.remove('active')); currentTag = 'all'; } filterGames(); }); });
     subButtons.forEach(btn => { btn.addEventListener('click', function(e) { e.preventDefault(); subButtons.forEach(b => b.classList.remove('active')); this.classList.add('active'); currentTag = this.getAttribute('data-tag'); filterGames(); }); });
