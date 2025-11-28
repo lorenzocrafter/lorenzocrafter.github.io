@@ -395,3 +395,54 @@ body.is-admin .delete-btn { display: inline-block; }
 }
 /* Nota: La animación spinRGB es compleja de hacer simple en borde, 
    así que usaremos un brillo rotatorio simple */
+
+/* --- NOTIFICACIONES TOAST (Burbujas) --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: rgba(10, 5, 20, 0.95);
+    border: 1px solid #00fff2;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 50px;
+    box-shadow: 0 0 20px rgba(0, 255, 242, 0.3);
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideDown 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    backdrop-filter: blur(5px);
+}
+
+/* Estilos por tipo */
+.toast.error {
+    border-color: #ff4757;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+    color: #ffcccb;
+}
+
+.toast.success {
+    border-color: #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    color: #ccffdd;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateY(-20px); }
+}
