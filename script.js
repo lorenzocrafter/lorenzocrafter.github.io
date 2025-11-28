@@ -1,5 +1,5 @@
 // --- CONFIGURACIÓN ---
-const ADMIN_EMAIL = "lorenzocrafter@gmail.com"; 
+const ADMIN_EMAIL = "lorenzocrafteryt@gmail.com"; 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
