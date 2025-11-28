@@ -1,5 +1,5 @@
 // --- CONFIGURACIÓN ---
-const ADMIN_EMAIL = "lorenzocrafter@gmail.com"; // TU EMAIL AQUÍ
+const ADMIN_EMAIL = "lorenzocrafteryt@gmail.com"; // TU EMAIL AQUÍ
 
 // IMPORTACIONES FIREBASE
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
